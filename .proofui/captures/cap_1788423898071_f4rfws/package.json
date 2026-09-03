@@ -1,0 +1,1109 @@
+{
+  "id": "cap_1788423898071_f4rfws",
+  "requestedUrl": "http://localhost:3000/api/fixtures/landing-page",
+  "finalUrl": "http://localhost:3000/api/fixtures/landing-page",
+  "title": "Acme Cloud Platform",
+  "capturedAt": "2026-09-03T08:24:59.416Z",
+  "viewport": {
+    "width": 1440,
+    "height": 900,
+    "deviceScaleFactor": 1
+  },
+  "screenshot": {
+    "pathOrUrl": "/api/imports/cap_1788423898071_f4rfws/screenshot",
+    "thumbnailPathOrUrl": "/api/imports/cap_1788423898071_f4rfws/screenshot?thumb=1",
+    "width": 1440,
+    "height": 900,
+    "format": "png",
+    "strategy": "native-full-page",
+    "truncated": false
+  },
+  "structure": {
+    "root": {
+      "captureId": "c_1",
+      "tagName": "body",
+      "attributes": {},
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "width": 1440,
+        "height": 814
+      },
+      "visibility": "visible",
+      "children": [
+        {
+          "captureId": "c_2",
+          "tagName": "header",
+          "attributes": {
+            "class": "header"
+          },
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 1440,
+            "height": 57
+          },
+          "visibility": "visible",
+          "children": [
+            {
+              "captureId": "c_3",
+              "tagName": "div",
+              "attributes": {
+                "class": "logo"
+              },
+              "rect": {
+                "x": 32,
+                "y": 16,
+                "width": 93,
+                "height": 24
+              },
+              "visibility": "visible",
+              "children": [
+                {
+                  "captureId": "c_4",
+                  "tagName": "strong",
+                  "textPreview": "Acme Cloud",
+                  "attributes": {},
+                  "rect": {
+                    "x": 32,
+                    "y": 19,
+                    "width": 93,
+                    "height": 18
+                  },
+                  "visibility": "visible",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "captureId": "c_5",
+              "tagName": "nav",
+              "attributes": {
+                "class": "nav"
+              },
+              "rect": {
+                "x": 1200,
+                "y": 16,
+                "width": 208,
+                "height": 24
+              },
+              "visibility": "visible",
+              "children": [
+                {
+                  "captureId": "c_6",
+                  "tagName": "a",
+                  "textPreview": "Features",
+                  "attributes": {
+                    "href": "/features"
+                  },
+                  "rect": {
+                    "x": 1220,
+                    "y": 20,
+                    "width": 56,
+                    "height": 17
+                  },
+                  "visibility": "visible",
+                  "children": []
+                },
+                {
+                  "captureId": "c_7",
+                  "tagName": "a",
+                  "textPreview": "Pricing",
+                  "attributes": {
+                    "href": "/pricing"
+                  },
+                  "rect": {
+                    "x": 1300,
+                    "y": 20,
+                    "width": 45,
+                    "height": 17
+                  },
+                  "visibility": "visible",
+                  "children": []
+                },
+                {
+                  "captureId": "c_8",
+                  "tagName": "a",
+                  "textPreview": "About",
+                  "attributes": {
+                    "href": "/about"
+                  },
+                  "rect": {
+                    "x": 1369,
+                    "y": 20,
+                    "width": 39,
+                    "height": 17
+                  },
+                  "visibility": "visible",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "captureId": "c_9",
+          "tagName": "main",
+          "attributes": {},
+          "rect": {
+            "x": 0,
+            "y": 57,
+            "width": 1440,
+            "height": 579
+          },
+          "visibility": "visible",
+          "children": [
+            {
+              "captureId": "c_10",
+              "tagName": "section",
+              "attributes": {
+                "class": "hero"
+              },
+              "rect": {
+                "x": 288,
+                "y": 57,
+                "width": 864,
+                "height": 351
+              },
+              "visibility": "visible",
+              "children": [
+                {
+                  "captureId": "c_11",
+                  "tagName": "h1",
+                  "textPreview": "Scale Your Workflows Instantly",
+                  "attributes": {},
+                  "rect": {
+                    "x": 320,
+                    "y": 153,
+                    "width": 800,
+                    "height": 72
+                  },
+                  "visibility": "visible",
+                  "children": []
+                },
+                {
+                  "captureId": "c_12",
+                  "tagName": "p",
+                  "textPreview": "Deploy edge compute and realtime analytics in seconds.",
+                  "attributes": {
+                    "class": "subtitle"
+                  },
+                  "rect": {
+                    "x": 320,
+                    "y": 243,
+                    "width": 800,
+                    "height": 27
+                  },
+                  "visibility": "visible",
+                  "children": []
+                },
+                {
+                  "captureId": "c_13",
+                  "tagName": "button",
+                  "textPreview": "Get Started Free",
+                  "attributes": {
+                    "class": "btn-primary"
+                  },
+                  "rect": {
+                    "x": 634,
+                    "y": 302,
+                    "width": 172,
+                    "height": 42
+                  },
+                  "visibility": "visible",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "captureId": "c_14",
+              "tagName": "section",
+              "attributes": {
+                "class": "features grid"
+              },
+              "rect": {
+                "x": 138,
+                "y": 456,
+                "width": 1164,
+                "height": 180
+              },
+              "visibility": "visible",
+              "children": [
+                {
+                  "captureId": "c_15",
+                  "tagName": "div",
+                  "attributes": {
+                    "class": "card"
+                  },
+                  "rect": {
+                    "x": 170,
+                    "y": 456,
+                    "width": 351,
+                    "height": 180
+                  },
+                  "visibility": "visible",
+                  "children": [
+                    {
+                      "captureId": "c_16",
+                      "tagName": "h3",
+                      "textPreview": "Fast Deployment",
+                      "attributes": {},
+                      "rect": {
+                        "x": 195,
+                        "y": 500,
+                        "width": 301,
+                        "height": 28
+                      },
+                      "visibility": "visible",
+                      "children": []
+                    },
+                    {
+                      "captureId": "c_17",
+                      "tagName": "p",
+                      "textPreview": "Deploy containers worldwide with zero configuration.",
+                      "attributes": {},
+                      "rect": {
+                        "x": 195,
+                        "y": 547,
+                        "width": 301,
+                        "height": 48
+                      },
+                      "visibility": "visible",
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "captureId": "c_18",
+                  "tagName": "div",
+                  "attributes": {
+                    "class": "card"
+                  },
+                  "rect": {
+                    "x": 545,
+                    "y": 456,
+                    "width": 351,
+                    "height": 180
+                  },
+                  "visibility": "visible",
+                  "children": [
+                    {
+                      "captureId": "c_19",
+                      "tagName": "h3",
+                      "textPreview": "Realtime Metrics",
+                      "attributes": {},
+                      "rect": {
+                        "x": 570,
+                        "y": 500,
+                        "width": 301,
+                        "height": 28
+                      },
+                      "visibility": "visible",
+                      "children": []
+                    },
+                    {
+                      "captureId": "c_20",
+                      "tagName": "p",
+                      "textPreview": "Sub-millisecond telemetry for mission critical infra.",
+                      "attributes": {},
+                      "rect": {
+                        "x": 570,
+                        "y": 547,
+                        "width": 301,
+                        "height": 48
+                      },
+                      "visibility": "visible",
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "captureId": "c_21",
+                  "tagName": "div",
+                  "attributes": {
+                    "class": "card"
+                  },
+                  "rect": {
+                    "x": 919,
+                    "y": 456,
+                    "width": 351,
+                    "height": 180
+                  },
+                  "visibility": "visible",
+                  "children": [
+                    {
+                      "captureId": "c_22",
+                      "tagName": "h3",
+                      "textPreview": "Global Edge",
+                      "attributes": {},
+                      "rect": {
+                        "x": 944,
+                        "y": 500,
+                        "width": 301,
+                        "height": 28
+                      },
+                      "visibility": "visible",
+                      "children": []
+                    },
+                    {
+                      "captureId": "c_23",
+                      "tagName": "p",
+                      "textPreview": "Over 300 edge locations with automated failover.",
+                      "attributes": {},
+                      "rect": {
+                        "x": 944,
+                        "y": 547,
+                        "width": 301,
+                        "height": 48
+                      },
+                      "visibility": "visible",
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "captureId": "c_24",
+          "tagName": "footer",
+          "attributes": {
+            "class": "footer"
+          },
+          "rect": {
+            "x": 0,
+            "y": 700,
+            "width": 1440,
+            "height": 114
+          },
+          "visibility": "visible",
+          "children": [
+            {
+              "captureId": "c_25",
+              "tagName": "p",
+              "textPreview": "© 2026 Acme Cloud Inc. All rights reserved.",
+              "attributes": {},
+              "rect": {
+                "x": 32,
+                "y": 747,
+                "width": 1376,
+                "height": 21
+              },
+              "visibility": "visible",
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    "totalNodeCount": 25,
+    "maxDepth": 32,
+    "headings": [
+      {
+        "level": 1,
+        "text": "Scale Your Workflows Instantly",
+        "captureId": "c_11"
+      },
+      {
+        "level": 3,
+        "text": "Fast Deployment",
+        "captureId": "c_16"
+      },
+      {
+        "level": 3,
+        "text": "Realtime Metrics",
+        "captureId": "c_19"
+      },
+      {
+        "level": 3,
+        "text": "Global Edge",
+        "captureId": "c_22"
+      }
+    ],
+    "landmarks": [
+      {
+        "tag": "header",
+        "captureId": "c_2"
+      },
+      {
+        "tag": "nav",
+        "captureId": "c_5"
+      },
+      {
+        "tag": "main",
+        "captureId": "c_9"
+      },
+      {
+        "tag": "section",
+        "captureId": "c_10"
+      },
+      {
+        "tag": "section",
+        "captureId": "c_14"
+      },
+      {
+        "tag": "footer",
+        "captureId": "c_24"
+      }
+    ]
+  },
+  "designTokens": {
+    "colors": {
+      "primary": {
+        "value": "rgb(37, 99, 235)",
+        "frequency": 1,
+        "sampleNodeIds": [],
+        "confidence": 0.55,
+        "evidence": [
+          "Observed 1 times in computed element styles"
+        ]
+      },
+      "secondary": {
+        "value": "rgb(244, 244, 245)",
+        "frequency": 3,
+        "sampleNodeIds": [],
+        "confidence": 0.65,
+        "evidence": [
+          "Observed 3 times in computed element styles"
+        ]
+      },
+      "accent": {
+        "value": "rgb(37, 99, 235)",
+        "frequency": 1,
+        "sampleNodeIds": [],
+        "confidence": 0.55,
+        "evidence": [
+          "Observed 1 times in computed element styles"
+        ]
+      },
+      "background": {
+        "value": "rgb(255, 255, 255)",
+        "frequency": 1,
+        "sampleNodeIds": [
+          "body"
+        ],
+        "confidence": 0.95,
+        "evidence": [
+          "Observed directly on <body> element computed style"
+        ]
+      },
+      "surface": {
+        "value": "rgb(244, 244, 245)",
+        "frequency": 3,
+        "sampleNodeIds": [],
+        "confidence": 0.65,
+        "evidence": [
+          "Observed 3 times in computed element styles"
+        ]
+      },
+      "textPrimary": {
+        "value": "rgb(9, 9, 11)",
+        "frequency": 19,
+        "sampleNodeIds": [],
+        "confidence": 0.95,
+        "evidence": [
+          "Observed 19 times in computed element styles"
+        ]
+      },
+      "textMuted": {
+        "value": "rgb(113, 113, 122)",
+        "frequency": 3,
+        "sampleNodeIds": [],
+        "confidence": 0.65,
+        "evidence": [
+          "Observed 3 times in computed element styles"
+        ]
+      },
+      "border": {
+        "value": "rgb(9, 9, 11)",
+        "frequency": 15,
+        "sampleNodeIds": [],
+        "confidence": 0.95,
+        "evidence": [
+          "Observed 15 times in computed element styles"
+        ]
+      },
+      "allSampled": [
+        {
+          "value": "rgb(244, 244, 245)",
+          "frequency": 3,
+          "sampleNodeIds": [],
+          "confidence": 0.65,
+          "evidence": [
+            "Observed 3 times in computed element styles"
+          ]
+        },
+        {
+          "value": "rgb(255, 255, 255)",
+          "frequency": 1,
+          "sampleNodeIds": [],
+          "confidence": 0.55,
+          "evidence": [
+            "Observed 1 times in computed element styles"
+          ]
+        },
+        {
+          "value": "rgb(37, 99, 235)",
+          "frequency": 1,
+          "sampleNodeIds": [],
+          "confidence": 0.55,
+          "evidence": [
+            "Observed 1 times in computed element styles"
+          ]
+        },
+        {
+          "value": "rgb(9, 9, 11)",
+          "frequency": 19,
+          "sampleNodeIds": [],
+          "confidence": 0.95,
+          "evidence": [
+            "Observed 19 times in computed element styles"
+          ]
+        },
+        {
+          "value": "rgb(113, 113, 122)",
+          "frequency": 3,
+          "sampleNodeIds": [],
+          "confidence": 0.65,
+          "evidence": [
+            "Observed 3 times in computed element styles"
+          ]
+        },
+        {
+          "value": "rgb(255, 255, 255)",
+          "frequency": 1,
+          "sampleNodeIds": [],
+          "confidence": 0.55,
+          "evidence": [
+            "Observed 1 times in computed element styles"
+          ]
+        }
+      ]
+    },
+    "typography": {
+      "fontFamilies": [
+        {
+          "value": "system-ui",
+          "frequency": 22,
+          "sampleNodeIds": [],
+          "confidence": 0.95,
+          "evidence": [
+            "Observed 22 times in computed element styles"
+          ]
+        },
+        {
+          "value": "Arial",
+          "frequency": 1,
+          "sampleNodeIds": [],
+          "confidence": 0.55,
+          "evidence": [
+            "Observed 1 times in computed element styles"
+          ]
+        }
+      ],
+      "fontSizeScale": [
+        {
+          "value": "14px",
+          "frequency": 5,
+          "sampleNodeIds": [],
+          "confidence": 0.75,
+          "evidence": [
+            "Observed 5 times in computed element styles"
+          ]
+        },
+        {
+          "value": "16px",
+          "frequency": 13,
+          "sampleNodeIds": [],
+          "confidence": 0.95,
+          "evidence": [
+            "Observed 13 times in computed element styles"
+          ]
+        },
+        {
+          "value": "18px",
+          "frequency": 1,
+          "sampleNodeIds": [],
+          "confidence": 0.55,
+          "evidence": [
+            "Observed 1 times in computed element styles"
+          ]
+        },
+        {
+          "value": "18.72px",
+          "frequency": 3,
+          "sampleNodeIds": [],
+          "confidence": 0.65,
+          "evidence": [
+            "Observed 3 times in computed element styles"
+          ]
+        },
+        {
+          "value": "48px",
+          "frequency": 1,
+          "sampleNodeIds": [],
+          "confidence": 0.55,
+          "evidence": [
+            "Observed 1 times in computed element styles"
+          ]
+        }
+      ],
+      "fontWeights": [
+        {
+          "value": "400",
+          "frequency": 18,
+          "sampleNodeIds": [],
+          "confidence": 0.95,
+          "evidence": [
+            "Observed 18 times in computed element styles"
+          ]
+        },
+        {
+          "value": "600",
+          "frequency": 1,
+          "sampleNodeIds": [],
+          "confidence": 0.55,
+          "evidence": [
+            "Observed 1 times in computed element styles"
+          ]
+        },
+        {
+          "value": "700",
+          "frequency": 3,
+          "sampleNodeIds": [],
+          "confidence": 0.65,
+          "evidence": [
+            "Observed 3 times in computed element styles"
+          ]
+        },
+        {
+          "value": "800",
+          "frequency": 1,
+          "sampleNodeIds": [],
+          "confidence": 0.55,
+          "evidence": [
+            "Observed 1 times in computed element styles"
+          ]
+        }
+      ],
+      "lineHeights": [
+        {
+          "value": "24px",
+          "frequency": 12,
+          "sampleNodeIds": [],
+          "confidence": 0.95,
+          "evidence": [
+            "Observed 12 times in computed element styles"
+          ]
+        },
+        {
+          "value": "21px",
+          "frequency": 5,
+          "sampleNodeIds": [],
+          "confidence": 0.75,
+          "evidence": [
+            "Observed 5 times in computed element styles"
+          ]
+        },
+        {
+          "value": "28.08px",
+          "frequency": 3,
+          "sampleNodeIds": [],
+          "confidence": 0.65,
+          "evidence": [
+            "Observed 3 times in computed element styles"
+          ]
+        },
+        {
+          "value": "72px",
+          "frequency": 1,
+          "sampleNodeIds": [],
+          "confidence": 0.55,
+          "evidence": [
+            "Observed 1 times in computed element styles"
+          ]
+        },
+        {
+          "value": "27px",
+          "frequency": 1,
+          "sampleNodeIds": [],
+          "confidence": 0.55,
+          "evidence": [
+            "Observed 1 times in computed element styles"
+          ]
+        }
+      ]
+    },
+    "spacing": {
+      "paddingScale": [
+        {
+          "value": "24px",
+          "frequency": 3,
+          "sampleNodeIds": [],
+          "confidence": 0.65,
+          "evidence": [
+            "Observed 3 times in computed element styles"
+          ]
+        },
+        {
+          "value": "16px",
+          "frequency": 1,
+          "sampleNodeIds": [],
+          "confidence": 0.55,
+          "evidence": [
+            "Observed 1 times in computed element styles"
+          ]
+        },
+        {
+          "value": "32px",
+          "frequency": 1,
+          "sampleNodeIds": [],
+          "confidence": 0.55,
+          "evidence": [
+            "Observed 1 times in computed element styles"
+          ]
+        },
+        {
+          "value": "64px",
+          "frequency": 1,
+          "sampleNodeIds": [],
+          "confidence": 0.55,
+          "evidence": [
+            "Observed 1 times in computed element styles"
+          ]
+        },
+        {
+          "value": "0px",
+          "frequency": 1,
+          "sampleNodeIds": [],
+          "confidence": 0.55,
+          "evidence": [
+            "Observed 1 times in computed element styles"
+          ]
+        },
+        {
+          "value": "12px",
+          "frequency": 1,
+          "sampleNodeIds": [],
+          "confidence": 0.55,
+          "evidence": [
+            "Observed 1 times in computed element styles"
+          ]
+        }
+      ],
+      "gapScale": [
+        {
+          "value": "24px",
+          "frequency": 1,
+          "sampleNodeIds": [],
+          "confidence": 0.55,
+          "evidence": [
+            "Observed 1 times in computed element styles"
+          ]
+        }
+      ],
+      "containerWidths": [
+        {
+          "value": "1440px",
+          "frequency": 1,
+          "sampleNodeIds": [],
+          "confidence": 0.9,
+          "evidence": [
+            "Standard desktop capture viewport bound"
+          ]
+        }
+      ]
+    },
+    "radii": [
+      {
+        "value": "12px",
+        "frequency": 3,
+        "sampleNodeIds": [],
+        "confidence": 0.65,
+        "evidence": [
+          "Observed 3 times in computed element styles"
+        ]
+      },
+      {
+        "value": "8px",
+        "frequency": 1,
+        "sampleNodeIds": [],
+        "confidence": 0.55,
+        "evidence": [
+          "Observed 1 times in computed element styles"
+        ]
+      }
+    ],
+    "shadows": []
+  },
+  "components": [
+    {
+      "kind": "Header",
+      "captureNodeId": "c_2",
+      "confidence": 0.95,
+      "evidence": [
+        "Semantic <header> HTML tag"
+      ]
+    },
+    {
+      "kind": "Navigation",
+      "captureNodeId": "c_5",
+      "confidence": 0.95,
+      "evidence": [
+        "Semantic <nav> element"
+      ]
+    },
+    {
+      "kind": "Pricing Section",
+      "captureNodeId": "c_7",
+      "confidence": 0.85,
+      "evidence": [
+        "Pricing keywords or plan structures detected"
+      ]
+    },
+    {
+      "kind": "Hero",
+      "captureNodeId": "c_10",
+      "confidence": 0.88,
+      "evidence": [
+        "Class name contains \"hero\""
+      ]
+    },
+    {
+      "kind": "Call To Action",
+      "captureNodeId": "c_13",
+      "confidence": 0.9,
+      "evidence": [
+        "Prominent action link or button with text: \"Get Started Free\""
+      ]
+    },
+    {
+      "kind": "Feature Grid",
+      "captureNodeId": "c_14",
+      "confidence": 0.82,
+      "evidence": [
+        "Multi-child container with 3 structured card elements"
+      ]
+    },
+    {
+      "kind": "Footer",
+      "captureNodeId": "c_24",
+      "confidence": 0.98,
+      "evidence": [
+        "Semantic <footer> element"
+      ]
+    }
+  ],
+  "motion": [
+    {
+      "kind": "reduced-motion-support",
+      "value": "prefers-reduced-motion media query supported",
+      "confidence": 0.95,
+      "evidence": [
+        "Media query (prefers-reduced-motion: reduce) evaluated in browser"
+      ]
+    }
+  ],
+  "accessibility": [
+    {
+      "observation": "Document has exactly one primary <h1> element.",
+      "type": "positive",
+      "confidence": 0.98,
+      "evidence": [
+        "Single H1 found with title \"Scale Your Workflows Instantly\""
+      ]
+    },
+    {
+      "observation": "Heading hierarchy skips levels (e.g. H1 directly to H3 without intermediate H2).",
+      "type": "warning",
+      "confidence": 0.92,
+      "evidence": [
+        "Heading progression analysis"
+      ]
+    },
+    {
+      "observation": "Semantic <main> landmark identified for primary content.",
+      "type": "positive",
+      "confidence": 0.98,
+      "evidence": [
+        "<main> tag or role='main' detected"
+      ]
+    },
+    {
+      "observation": "Semantic <nav> navigation landmark present.",
+      "type": "positive",
+      "confidence": 0.98,
+      "evidence": [
+        "<nav> tag or role='navigation' detected"
+      ]
+    }
+  ],
+  "frameworks": [
+    {
+      "name": "Tailwind CSS",
+      "confidence": 0.85,
+      "evidence": [
+        "Utility class patterns identified in DOM elements"
+      ]
+    }
+  ],
+  "assets": [],
+  "sanitizedHtml": "<!-- ProofUI Import Provenance: source=\"http://localhost:3000/api/fixtures/landing-page\" capturedAt=\"2026-09-03T08:24:59.316Z\" -->\n<!DOCTYPE html>\n<html lang=\"en\"><head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Acme Cloud Platform</title>\n  <style>\n    :root {\n      --bg: #ffffff;\n      --text: #09090b;\n      --primary: #2563eb;\n      --surface: #f4f4f5;\n      --border: #e4e4e7;\n    }\n    body {\n      margin: 0;\n      font-family: system-ui, -apple-system, sans-serif;\n      background-color: var(--bg);\n      color: var(--text);\n      line-height: 1.5;\n    }\n    header.header {\n      display: flex;\n      justify-content: space-between;\n      align-items: center;\n      padding: 16px 32px;\n      border-bottom: 1px solid var(--border);\n    }\n    nav.nav a {\n      margin-left: 20px;\n      text-decoration: none;\n      color: var(--text);\n      font-size: 14px;\n    }\n    section.hero {\n      padding: 64px 32px;\n      text-align: center;\n      max-width: 800px;\n      margin: 0 auto;\n    }\n    h1 {\n      font-size: 48px;\n      font-weight: 800;\n      margin-bottom: 16px;\n    }\n    p.subtitle {\n      font-size: 18px;\n      color: #71717a;\n      margin-bottom: 32px;\n    }\n    button.btn-primary {\n      background-color: var(--primary);\n      color: #ffffff;\n      padding: 12px 24px;\n      border-radius: 8px;\n      border: none;\n      font-size: 16px;\n      font-weight: 600;\n      cursor: pointer;\n    }\n    section.features.grid {\n      display: grid;\n      grid-template-columns: repeat(3, 1fr);\n      gap: 24px;\n      max-width: 1100px;\n      margin: 48px auto;\n      padding: 0 32px;\n    }\n    .card {\n      background-color: var(--surface);\n      border: 1px solid var(--border);\n      border-radius: 12px;\n      padding: 24px;\n    }\n    footer.footer {\n      border-top: 1px solid var(--border);\n      padding: 32px;\n      text-align: center;\n      color: #71717a;\n      font-size: 14px;\n      margin-top: 64px;\n    }\n  </style>\n<script src=\"https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4\"></script></head>\n<body data-editor-id=\"body-root\">\n  <header class=\"header\" data-editor-id=\"node_6c47e536-bef8-4dcf-8182-b1c86cac67b6\">\n    <div class=\"logo\" data-editor-id=\"node_374d9994-d3dd-4708-a90a-d2fd52a0aae1\"><strong data-editor-id=\"node_b688173c-82d4-473a-bd53-452147c6e3ee\">Acme Cloud</strong></div>\n    <nav class=\"nav\" data-editor-id=\"node_51282a3b-06ca-451f-8f24-fe6896406964\">\n      <a href=\"/features\" data-editor-id=\"node_7c94be0f-7c83-4646-84fc-6d48d037daa5\">Features</a>\n      <a href=\"/pricing\" data-editor-id=\"node_d5ecb6a9-ffdb-4c0d-8cec-fba74e3993fd\">Pricing</a>\n      <a href=\"/about\" data-editor-id=\"node_7c109d50-9186-41eb-98db-b43643578c2c\">About</a>\n    </nav>\n  </header>\n\n  <main data-editor-id=\"node_45ab3663-fc9a-430b-9323-27864191d307\">\n    <section class=\"hero\" data-editor-id=\"node_c397a708-c381-4e64-a230-422576a2a3f0\">\n      <h1 data-editor-id=\"node_468779c9-1f1b-4948-b9ce-a6cdfd1fcc88\">Scale Your Workflows Instantly</h1>\n      <p class=\"subtitle\" data-editor-id=\"node_96cd752b-fad2-4be0-9540-d8b0a24b4841\">Deploy edge compute and realtime analytics in seconds.</p>\n      <button class=\"btn-primary\" data-editor-id=\"node_3181870e-af1a-4711-9641-54e493453f4b\">Get Started Free</button>\n    </section>\n\n    <section class=\"features grid\" data-editor-id=\"node_f8720480-e12c-423c-9266-02c54605e423\">\n      <div class=\"card\" data-editor-id=\"node_90155dce-4bd8-4f95-8ae4-20d8418f065c\">\n        <h3 data-editor-id=\"node_9cafc708-8c56-4ec9-bfcc-1483876e320e\">Fast Deployment</h3>\n        <p data-editor-id=\"node_3101dc8f-73e9-44b8-a2b1-2c0d2a6b6d46\">Deploy containers worldwide with zero configuration.</p>\n      </div>\n      <div class=\"card\" data-editor-id=\"node_35952012-7a77-43a2-bd3d-c15a55c1effa\">\n        <h3 data-editor-id=\"node_cf9eeb22-8ae5-4e5d-8b0e-fff35ccdc36b\">Realtime Metrics</h3>\n        <p data-editor-id=\"node_1dd5e439-0c3d-4c16-b710-d2f0dd0752d1\">Sub-millisecond telemetry for mission critical infra.</p>\n      </div>\n      <div class=\"card\" data-editor-id=\"node_2f3b3bc5-5e79-4b15-8e75-2682ea4aaffb\">\n        <h3 data-editor-id=\"node_0a827989-511f-4425-94b1-444ab7e0dba1\">Global Edge</h3>\n        <p data-editor-id=\"node_3817c8fc-4057-4889-8152-dd549613a751\">Over 300 edge locations with automated failover.</p>\n      </div>\n    </section>\n  </main>\n\n  <footer class=\"footer\" data-editor-id=\"node_035f94a9-8e63-4378-956d-ae98e5cabed8\">\n    <p data-editor-id=\"node_8cf884fc-1881-4508-9f1b-62d18dff7be2\">© 2026 Acme Cloud Inc. All rights reserved.</p>\n  </footer>\n\n</body></html>",
+  "designMarkdown": "---\nversion: \"1.0\"\nprovenance:\n  sourceUrl: http://localhost:3000/api/fixtures/landing-page\n  title: Acme Cloud Platform\n  capturedAt: 2026-09-03T08:24:59.314Z\n  viewport: 1440x900@1x\ndesignTokens:\n  colors:\n    primary: rgb(37, 99, 235)\n    secondary: rgb(244, 244, 245)\n    background: rgb(255, 255, 255)\n    surface: rgb(244, 244, 245)\n    textPrimary: rgb(9, 9, 11)\n    textMuted: rgb(113, 113, 122)\n    border: rgb(9, 9, 11)\n  typography:\n    fontFamilies:\n      - system-ui\n      - Arial\n    fontSizeScale:\n      - 14px\n      - 16px\n      - 18px\n      - 18.72px\n      - 48px\n    fontWeights:\n      - \"400\"\n      - \"600\"\n      - \"700\"\n      - \"800\"\n  spacing:\n    paddingScale:\n      - 24px\n      - 16px\n      - 32px\n      - 64px\n      - 0px\n      - 12px\n    gapScale:\n      - 24px\n    containerWidths:\n      - 1440px\n  radii:\n    - 12px\n    - 8px\n  shadows: []\ncomponents:\n  - kind: Header\n    confidence: 0.95\n  - kind: Navigation\n    confidence: 0.95\n  - kind: Pricing Section\n    confidence: 0.85\n  - kind: Hero\n    confidence: 0.88\n  - kind: Call To Action\n    confidence: 0.9\n  - kind: Feature Grid\n    confidence: 0.82\n  - kind: Footer\n    confidence: 0.98\n---\n\n# Design System Specification: Acme Cloud Platform\n\n> **Note**: This design specification was deterministically extracted from static browser capture evidence.\n> Statements marked **[Observed]** reflect direct computed properties; **[Inferred]** statements represent structural heuristics.\n\n---\n\n## 1. Overview\n- **Source URL**: [http://localhost:3000/api/fixtures/landing-page](http://localhost:3000/api/fixtures/landing-page)\n- **Captured At**: 2026-09-03T08:24:59.314Z\n- **Viewport**: 1440px × 900px (Scale Factor: 1)\n- **DOM Hierarchy**: 25 semantic elements, maximum tree depth 32\n\n---\n\n## 2. Evidence Summary\n- **[STRUCTURE]**: Extracted reduced semantic DOM with 25 nodes and 6 landmarks. *(Confidence: 95%)*\n- **[STRUCTURE]**: Discovered 4 headings (H1..H6) in document flow. *(Confidence: 98%)*\n- **[STYLE]**: Inferred primary interactive color from button and call-to-action computed styles: rgb(37, 99, 235) *(Confidence: 85%)*\n- **[STYLE]**: Observed main page background color: rgb(255, 255, 255) *(Confidence: 95%)*\n- **[STRUCTURE]**: Inferred component [Header] with 95% confidence: Semantic <header> HTML tag *(Confidence: 95%)*\n- **[STRUCTURE]**: Inferred component [Navigation] with 95% confidence: Semantic <nav> element *(Confidence: 95%)*\n- **[STRUCTURE]**: Inferred component [Pricing Section] with 85% confidence: Pricing keywords or plan structures detected *(Confidence: 85%)*\n- **[STRUCTURE]**: Inferred component [Hero] with 88% confidence: Class name contains \"hero\" *(Confidence: 88%)*\n- **[STRUCTURE]**: Inferred component [Call To Action] with 90% confidence: Prominent action link or button with text: \"Get Started Free\" *(Confidence: 90%)*\n- **[STRUCTURE]**: Inferred component [Feature Grid] with 82% confidence: Multi-child container with 3 structured card elements *(Confidence: 82%)*\n\n---\n\n## 3. Colors\n| Role | Value | Extraction Method | Sample Frequency |\n| :--- | :--- | :--- | :--- |\n| **Primary** | `rgb(37, 99, 235)` | [Inferred] Button & CTA computed styles | 1 occurrences |\n| **Secondary** | `rgb(244, 244, 245)` | [Inferred] Surface & accent fills | 3 occurrences |\n| **Background** | `rgb(255, 255, 255)` | [Observed] Direct `<body>` computed background | 1 occurrences |\n| **Surface** | `rgb(244, 244, 245)` | [Inferred] Card container background | 3 occurrences |\n| **Text Primary** | `rgb(9, 9, 11)` | [Observed] Heading & body computed color | 19 occurrences |\n| **Text Muted** | `rgb(113, 113, 122)` | [Inferred] Subtitle & secondary paragraph color | 3 occurrences |\n| **Border** | `rgb(9, 9, 11)` | [Observed] Card & container border color | 15 occurrences |\n\n---\n\n## 4. Typography\n- **Font Families**:\n  - `system-ui` *(Observed 22x)*\n  - `Arial` *(Observed 1x)*\n- **Type Scale**:\n  - `14px`\n  - `16px`\n  - `18px`\n  - `18.72px`\n  - `48px`\n- **Font Weights**:\n  - `400`\n  - `600`\n  - `700`\n  - `800`\n\n---\n\n## 5. Layout & Spacing Rhythm\n- **Padding Scale**: `24px`, `16px`, `32px`, `64px`, `0px`, `12px`\n- **Gap Scale**: `24px`\n- **Container Max Width**: `1440px`\n\n---\n\n## 6. Elevation & Depth\n- **Box Shadows**:\n  - Flat aesthetic (no prominent box shadows observed)\n\n---\n\n## 7. Shapes & Radii\n- **Border Radii**:\n  - `12px`\n  - `8px`\n\n---\n\n## 8. Components\n### Header *(Confidence: 95%)*\n- **Evidence**: Semantic <header> HTML tag\n\n### Navigation *(Confidence: 95%)*\n- **Evidence**: Semantic <nav> element\n\n### Pricing Section *(Confidence: 85%)*\n- **Evidence**: Pricing keywords or plan structures detected\n\n### Hero *(Confidence: 88%)*\n- **Evidence**: Class name contains \"hero\"\n\n### Call To Action *(Confidence: 90%)*\n- **Evidence**: Prominent action link or button with text: \"Get Started Free\"\n\n### Feature Grid *(Confidence: 82%)*\n- **Evidence**: Multi-child container with 3 structured card elements\n\n### Footer *(Confidence: 98%)*\n- **Evidence**: Semantic <footer> element\n\n---\n\n## 9. Motion\n- **[reduced-motion-support]**: prefers-reduced-motion media query supported (Media query (prefers-reduced-motion: reduce) evaluated in browser)\n\n---\n\n## 10. Accessibility Observations\n> **Important**: These are static heuristic observations and do not constitute a formal WCAG compliance audit.\n- **[POSITIVE]**: Document has exactly one primary <h1> element.\n- **[WARNING]**: Heading hierarchy skips levels (e.g. H1 directly to H3 without intermediate H2).\n- **[POSITIVE]**: Semantic <main> landmark identified for primary content.\n- **[POSITIVE]**: Semantic <nav> navigation landmark present.\n\n---\n\n## 11. Assets Manifest (0 items)\n| Type | Context | URL | Downloadable |\n| :--- | :--- | :--- | :--- |\n\n\n\n---\n\n## 12. Do's and Don'ts\n### Do's:\n- Maintain the primary button color `rgb(37, 99, 235)` across action prompts.\n- Preserve consistent padding scale `(24px, 16px, 32px)` across sections.\n- Adhere to the single primary `<h1>` heading hierarchy for optimal document structure.\n\n### Don'ts:\n- Do not mix divergent font families without matching contrast.\n- Do not execute external third-party scripts or event handlers in ProofUI reconstructions.\n- Do not duplicate fixed header elements across responsive breakpoints.\n\n---\n\n## 13. Extraction Limitations\n- Dynamic JavaScript application state, client-side routing, and background service workers are intentionally excluded.\n- Interactive hover and focus states requiring complex event sequences were not statically executed.\n- Authenticated or private content was not captured.\n",
+  "evidence": [
+    {
+      "id": "ev_1",
+      "category": "structure",
+      "source": "dom",
+      "description": "Extracted reduced semantic DOM with 25 nodes and 6 landmarks.",
+      "confidence": 0.95
+    },
+    {
+      "id": "ev_2",
+      "category": "structure",
+      "source": "dom",
+      "description": "Discovered 4 headings (H1..H6) in document flow.",
+      "confidence": 0.98
+    },
+    {
+      "id": "ev_3",
+      "category": "style",
+      "source": "computed-style",
+      "property": "primary-color",
+      "rawValue": "rgb(37, 99, 235)",
+      "description": "Inferred primary interactive color from button and call-to-action computed styles: rgb(37, 99, 235)",
+      "confidence": 0.85
+    },
+    {
+      "id": "ev_4",
+      "category": "style",
+      "source": "computed-style",
+      "property": "background-color",
+      "rawValue": "rgb(255, 255, 255)",
+      "description": "Observed main page background color: rgb(255, 255, 255)",
+      "confidence": 0.95
+    },
+    {
+      "id": "ev_5",
+      "category": "structure",
+      "source": "heuristic",
+      "nodeIds": [
+        "c_2"
+      ],
+      "description": "Inferred component [Header] with 95% confidence: Semantic <header> HTML tag",
+      "confidence": 0.95
+    },
+    {
+      "id": "ev_6",
+      "category": "structure",
+      "source": "heuristic",
+      "nodeIds": [
+        "c_5"
+      ],
+      "description": "Inferred component [Navigation] with 95% confidence: Semantic <nav> element",
+      "confidence": 0.95
+    },
+    {
+      "id": "ev_7",
+      "category": "structure",
+      "source": "heuristic",
+      "nodeIds": [
+        "c_7"
+      ],
+      "description": "Inferred component [Pricing Section] with 85% confidence: Pricing keywords or plan structures detected",
+      "confidence": 0.85
+    },
+    {
+      "id": "ev_8",
+      "category": "structure",
+      "source": "heuristic",
+      "nodeIds": [
+        "c_10"
+      ],
+      "description": "Inferred component [Hero] with 88% confidence: Class name contains \"hero\"",
+      "confidence": 0.88
+    },
+    {
+      "id": "ev_9",
+      "category": "structure",
+      "source": "heuristic",
+      "nodeIds": [
+        "c_13"
+      ],
+      "description": "Inferred component [Call To Action] with 90% confidence: Prominent action link or button with text: \"Get Started Free\"",
+      "confidence": 0.9
+    },
+    {
+      "id": "ev_10",
+      "category": "structure",
+      "source": "heuristic",
+      "nodeIds": [
+        "c_14"
+      ],
+      "description": "Inferred component [Feature Grid] with 82% confidence: Multi-child container with 3 structured card elements",
+      "confidence": 0.82
+    },
+    {
+      "id": "ev_11",
+      "category": "structure",
+      "source": "heuristic",
+      "nodeIds": [
+        "c_24"
+      ],
+      "description": "Inferred component [Footer] with 98% confidence: Semantic <footer> element",
+      "confidence": 0.98
+    },
+    {
+      "id": "ev_12",
+      "category": "motion",
+      "source": "computed-style",
+      "description": "Observed motion signal: reduced-motion-support (prefers-reduced-motion media query supported)",
+      "confidence": 0.95
+    },
+    {
+      "id": "ev_13",
+      "category": "accessibility",
+      "source": "heuristic",
+      "description": "Accessibility observation: Document has exactly one primary <h1> element.",
+      "confidence": 0.98
+    },
+    {
+      "id": "ev_14",
+      "category": "accessibility",
+      "source": "heuristic",
+      "description": "Accessibility observation: Heading hierarchy skips levels (e.g. H1 directly to H3 without intermediate H2).",
+      "confidence": 0.92
+    },
+    {
+      "id": "ev_15",
+      "category": "accessibility",
+      "source": "heuristic",
+      "description": "Accessibility observation: Semantic <main> landmark identified for primary content.",
+      "confidence": 0.98
+    },
+    {
+      "id": "ev_16",
+      "category": "accessibility",
+      "source": "heuristic",
+      "description": "Accessibility observation: Semantic <nav> navigation landmark present.",
+      "confidence": 0.98
+    },
+    {
+      "id": "ev_17",
+      "category": "asset",
+      "source": "metadata",
+      "description": "Discovered and deduplicated 0 public asset references (images, icons, backgrounds).",
+      "confidence": 0.95
+    }
+  ],
+  "warnings": [],
+  "limits": {
+    "totalDurationMs": 1345,
+    "totalNodesSampled": 25,
+    "totalStylesSampled": 23,
+    "totalAssetsDiscovered": 0,
+    "screenshotTruncated": false,
+    "hiddenOverlaysCount": 0
+  }
+}

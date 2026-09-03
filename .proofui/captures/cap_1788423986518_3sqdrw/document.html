@@ -1,0 +1,122 @@
+<!-- ProofUI Import Provenance: source="http://localhost:3000/api/fixtures/landing-page" capturedAt="2026-09-03T08:26:27.199Z" -->
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Acme Cloud Platform</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --text: #09090b;
+      --primary: #2563eb;
+      --surface: #f4f4f5;
+      --border: #e4e4e7;
+    }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    header.header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 32px;
+      border-bottom: 1px solid var(--border);
+    }
+    nav.nav a {
+      margin-left: 20px;
+      text-decoration: none;
+      color: var(--text);
+      font-size: 14px;
+    }
+    section.hero {
+      padding: 64px 32px;
+      text-align: center;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-size: 48px;
+      font-weight: 800;
+      margin-bottom: 16px;
+    }
+    p.subtitle {
+      font-size: 18px;
+      color: #71717a;
+      margin-bottom: 32px;
+    }
+    button.btn-primary {
+      background-color: var(--primary);
+      color: #ffffff;
+      padding: 12px 24px;
+      border-radius: 8px;
+      border: none;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    section.features.grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      max-width: 1100px;
+      margin: 48px auto;
+      padding: 0 32px;
+    }
+    .card {
+      background-color: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+    }
+    footer.footer {
+      border-top: 1px solid var(--border);
+      padding: 32px;
+      text-align: center;
+      color: #71717a;
+      font-size: 14px;
+      margin-top: 64px;
+    }
+  </style>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script></head>
+<body data-editor-id="body-root">
+  <header class="header" data-editor-id="node_de841b2e-ee9a-42ce-a2f8-521c44806d0a">
+    <div class="logo" data-editor-id="node_d07cab5d-9731-446c-bd94-171dc7033a94"><strong data-editor-id="node_86689824-b1fb-43cb-9f49-d449704396ff">Acme Cloud</strong></div>
+    <nav class="nav" data-editor-id="node_1dbc3396-4700-4ea7-afc5-d23c3dd7569a">
+      <a href="/features" data-editor-id="node_6600330c-d1f0-405c-bbb6-43ddc2a87e0c">Features</a>
+      <a href="/pricing" data-editor-id="node_1bcd5578-4b00-4d4c-a1ed-cabd0df875ea">Pricing</a>
+      <a href="/about" data-editor-id="node_d817187d-dc41-4c3a-a6d1-3cce80ff0b69">About</a>
+    </nav>
+  </header>
+
+  <main data-editor-id="node_8609c892-6c12-4acf-a32c-f25c67e0affe">
+    <section class="hero" data-editor-id="node_d6218355-4875-4378-8533-86c0e6011d58">
+      <h1 data-editor-id="node_59f3b785-5ad3-456e-8046-4d765a5827a3">Scale Your Workflows Instantly</h1>
+      <p class="subtitle" data-editor-id="node_9443aef6-96d7-415c-a55b-9c1a3581da48">Deploy edge compute and realtime analytics in seconds.</p>
+      <button class="btn-primary" data-editor-id="node_f1b6cd9a-baca-4cd1-966c-f889cc64e259">Get Started Free</button>
+    </section>
+
+    <section class="features grid" data-editor-id="node_4d2b92a6-0e04-40a5-9fb3-286668fc7fd1">
+      <div class="card" data-editor-id="node_ee8fce56-6292-4836-b177-9106e8d70d0a">
+        <h3 data-editor-id="node_7454b296-4f24-47b9-a9c7-6dec9ae4a31f">Fast Deployment</h3>
+        <p data-editor-id="node_4ffd51d3-8ab7-4bc4-865e-5a0cdf77da17">Deploy containers worldwide with zero configuration.</p>
+      </div>
+      <div class="card" data-editor-id="node_8349f662-055b-4828-805a-29f746c27a0c">
+        <h3 data-editor-id="node_0cf1b1ef-99ea-4fe1-9981-623918642533">Realtime Metrics</h3>
+        <p data-editor-id="node_bb8ed977-defa-41b3-afbe-1001fd09c5c9">Sub-millisecond telemetry for mission critical infra.</p>
+      </div>
+      <div class="card" data-editor-id="node_1f38dcf0-9447-4cd7-a5e9-98a9602fc002">
+        <h3 data-editor-id="node_c842be17-3998-4611-a73d-0e61872192c3">Global Edge</h3>
+        <p data-editor-id="node_d99c9611-15a8-4255-8669-45797a332309">Over 300 edge locations with automated failover.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer" data-editor-id="node_07432200-1c38-4318-b9dc-cad4c8a71fe5">
+    <p data-editor-id="node_ed34f713-539d-4939-9ce8-ae4f2b850c6d">© 2026 Acme Cloud Inc. All rights reserved.</p>
+  </footer>
+
+</body></html>
