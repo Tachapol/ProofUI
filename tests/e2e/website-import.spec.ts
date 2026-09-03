@@ -45,7 +45,7 @@ test.describe("Milestone 4: Website URL Import, Capture, and Extraction", () => 
     await expect(dialog).toBeVisible();
 
     // Input fixture URL
-    const fixtureUrl = "http://localhost:3000/api/fixtures/landing-page";
+    const fixtureUrl = new URL("/api/fixtures/landing-page", page.url()).toString();
     await page.fill('[data-testid="import-url-input"]', fixtureUrl);
 
     // Start Capture
