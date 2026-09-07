@@ -43,7 +43,8 @@ interface ChatSidebarProps {
     instruction: string,
     scope: "new_page" | "new_version",
     attachments: ChatAttachment[],
-    generationContext: PageGenerationRequest["context"]
+    generationContext: PageGenerationRequest["context"],
+    provider: "qwen" | "gemini" | "mock"
   ) => Promise<void>;
   onCancel: () => void;
 }
@@ -148,7 +149,7 @@ export function ChatSidebar({
           currentStage={currentStage}
           initialPrompt={revisePrompt}
           onSendEdit={onSendEdit}
-          onSendGenerate={(instruction, scope, attachments) => {
+          onSendGenerate={(instruction, scope, attachments, provider) => {
             const genContext: PageGenerationRequest["context"] = {
               screenshotReference: documentContext?.screenshotReference,
               designMarkdown: documentContext?.designMarkdown,
@@ -156,7 +157,7 @@ export function ChatSidebar({
               designTokens: documentContext?.designTokens,
               assets: documentContext?.assets,
             };
-            return onSendGenerate(instruction, scope, attachments, genContext);
+            return onSendGenerate(instruction, scope, attachments, genContext, provider);
           }}
           onCancel={onCancel}
         />

@@ -6,6 +6,7 @@ interface UseResizablePanelOptions {
   minWidth?: number;
   maxWidth?: number;
   defaultCollapsed?: boolean;
+  side?: "left" | "right";
 }
 
 /**
@@ -50,6 +51,7 @@ export function useResizablePanel({
   minWidth = 320,
   maxWidth = 520,
   defaultCollapsed = false,
+  side = "left",
 }: UseResizablePanelOptions = {}) {
   const parseWidth = useCallback(
     (raw: string) => {
@@ -89,9 +91,25 @@ export function useResizablePanel({
       document.body.style.cursor = "col-resize";
       document.body.style.userSelect = "none";
 
+      // Disable iframe pointer events during drag so parent window continues receiving mousemove
+      const iframes = document.querySelectorAll("iframe");
+      iframes.forEach((iframe) => {
+        (iframe as HTMLElement).style.pointerEvents = "none";
+      });
+
+      const startX = e.clientX;
+      const startWidth = width;
+
       const handleMouseMove = (moveEvent: MouseEvent) => {
         if (!isDraggingRef.current) return;
-        const newWidth = Math.min(maxWidth, Math.max(minWidth, moveEvent.clientX));
+        const delta =
+          side === "right"
+            ? startX - moveEvent.clientX
+            : moveEvent.clientX - startX;
+        const newWidth = Math.min(
+          maxWidth,
+          Math.max(minWidth, startWidth + delta)
+        );
         setWidth(newWidth);
         notifyResize();
       };
@@ -100,6 +118,9 @@ export function useResizablePanel({
         isDraggingRef.current = false;
         document.body.style.cursor = "";
         document.body.style.userSelect = "";
+        iframes.forEach((iframe) => {
+          (iframe as HTMLElement).style.pointerEvents = "";
+        });
         window.removeEventListener("mousemove", handleMouseMove);
         window.removeEventListener("mouseup", handleMouseUp);
         notifyResize();
@@ -108,14 +129,19 @@ export function useResizablePanel({
       window.addEventListener("mousemove", handleMouseMove);
       window.addEventListener("mouseup", handleMouseUp);
     },
-    [minWidth, maxWidth, notifyResize]
+    [width, side, minWidth, maxWidth, notifyResize]
   );
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       let delta = 0;
-      if (e.key === "ArrowLeft") delta = -10;
-      if (e.key === "ArrowRight") delta = 10;
+      if (side === "right") {
+        if (e.key === "ArrowLeft") delta = 10;
+        if (e.key === "ArrowRight") delta = -10;
+      } else {
+        if (e.key === "ArrowLeft") delta = -10;
+        if (e.key === "ArrowRight") delta = 10;
+      }
       if (e.key === "Home") setWidth(minWidth);
       if (e.key === "End") setWidth(maxWidth);
 
@@ -125,7 +151,7 @@ export function useResizablePanel({
         notifyResize();
       }
     },
-    [minWidth, maxWidth, notifyResize]
+    [side, minWidth, maxWidth, notifyResize]
   );
 
   const toggleCollapse = useCallback(() => {

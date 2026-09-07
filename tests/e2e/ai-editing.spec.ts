@@ -73,7 +73,9 @@ test.describe("Visual HTML Editor - Milestone 3 AI Editing and Modes", () => {
     // -------------------------------------------------------------
     // Test 5: Reject Proposal leaves document pristine
     // -------------------------------------------------------------
-    await askAiBtn.click();
+    if (await aiComposer.isHidden()) {
+      await askAiBtn.click();
+    }
     await instructionInput.fill("Make the hero headline larger");
     await generateBtn.click();
     await expect(reviewModal).toBeVisible();
@@ -89,7 +91,9 @@ test.describe("Visual HTML Editor - Milestone 3 AI Editing and Modes", () => {
     // Test 6: Stale Revision Detection
     // -------------------------------------------------------------
     // Generate proposal
-    await askAiBtn.click();
+    if (await aiComposer.isHidden()) {
+      await askAiBtn.click();
+    }
     await instructionInput.fill("Make the hero headline larger");
     await generateBtn.click();
     await expect(reviewModal).toBeVisible();

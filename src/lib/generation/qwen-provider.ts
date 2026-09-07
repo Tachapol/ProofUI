@@ -133,6 +133,7 @@ export class QwenPageGenerationProvider implements PageGenerationProvider {
         new OpenAI({
           apiKey: this.config.apiKey,
           baseURL: this.config.baseURL,
+          timeout: 120000,
         });
 
       // 1. Prepare context
@@ -181,7 +182,7 @@ export class QwenPageGenerationProvider implements PageGenerationProvider {
             })) as OpenAI.ChatCompletionMessageParam[],
             response_format: buildQwenResponseSchema(),
             temperature: 0.7,
-            max_tokens: 16384,
+            max_tokens: 8192,
           },
           { signal }
         );

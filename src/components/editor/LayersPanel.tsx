@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from "react"
 import {
   ChevronRight,
   ChevronDown,
+  ChevronLeft,
   Layers,
   Box,
   Type,
@@ -21,6 +22,11 @@ interface LayersPanelProps {
   hoveredId: string | null;
   onSelectNode: (id: string | null) => void;
   onHoverNode: (id: string | null) => void;
+  width?: number;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
+  onMouseDownResize?: (e: React.MouseEvent) => void;
+  onKeyDownResize?: (e: React.KeyboardEvent) => void;
 }
 
 function getNodeIcon(node: SerializedNode) {
@@ -180,25 +186,32 @@ export function LayersPanel({
   hoveredId,
   onSelectNode,
   onHoverNode,
+  width,
+  isCollapsed,
+  onToggleCollapse,
+  onMouseDownResize,
+  onKeyDownResize,
 }: LayersPanelProps) {
-  // Store explicit user toggle overrides
+  // Local user expanded state override map (nodeId -> boolean)
   const [userToggledMap, setUserToggledMap] = useState<Record<string, boolean>>({});
 
-  // Collect all IDs recursively
+  // Collect all expandable IDs in document
   const allIds = useMemo(() => {
+    if (!documentTree) return [];
     const ids: string[] = [];
-    function collect(node: SerializedNode | null) {
-      if (!node) return;
-      ids.push(node.id);
-      if (node.children) {
-        for (const c of node.children) collect(c);
+    function collect(node: SerializedNode) {
+      if (node.children && node.children.length > 0) {
+        ids.push(node.id);
+        for (const child of node.children) {
+          collect(child);
+        }
       }
     }
     collect(documentTree);
     return ids;
   }, [documentTree]);
 
-  // Find ancestors of selected node
+  // Compute ancestor path for selectedId
   const selectedAncestors = useMemo(() => {
     if (!selectedId || !documentTree) return new Set<string>();
     const ancestors = new Set<string>();
@@ -253,11 +266,43 @@ export function LayersPanel({
     setUserToggledMap(next);
   };
 
+  if (isCollapsed) {
+    return (
+      <aside
+        className="w-10 bg-white dark:bg-zinc-950 border-r border-zinc-200 dark:border-zinc-800 flex flex-col items-center py-2 shrink-0 h-full select-none transition-colors"
+        data-testid="layers-panel-collapsed"
+      >
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onToggleCollapse}
+          title="Expand Layers Tree"
+          data-testid="layers-expand-btn"
+          className="h-7 w-7 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+        >
+          <Layers className="w-4 h-4" />
+        </Button>
+      </aside>
+    );
+  }
+
   return (
     <aside
-      className="w-72 bg-white dark:bg-zinc-950 border-r border-zinc-200 dark:border-zinc-800 flex flex-col shrink-0 h-full overflow-hidden select-none transition-colors"
+      className="relative bg-white dark:bg-zinc-950 border-r border-zinc-200 dark:border-zinc-800 flex flex-col shrink-0 h-full overflow-hidden select-none transition-colors"
+      style={{ width: width ? `${width}px` : "18rem" }}
       data-testid="layers-panel"
     >
+      {/* Resizer */}
+      <div
+        data-testid="layers-panel-resizer"
+        className="absolute top-0 right-0 w-1.5 h-full cursor-col-resize hover:bg-indigo-500/50 active:bg-indigo-500 transition-colors z-30"
+        onMouseDown={onMouseDownResize}
+        onKeyDown={onKeyDownResize}
+        role="separator"
+        aria-label="Resize layers panel"
+        tabIndex={0}
+      />
+
       {/* Header */}
       <div className="h-10 px-3 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between text-xs font-semibold text-zinc-800 dark:text-zinc-200">
         <div className="flex items-center gap-1.5">
@@ -265,15 +310,29 @@ export function LayersPanel({
           <span>Layers Tree</span>
         </div>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={toggleExpandAll}
-          title="Expand / Collapse all"
-          className="h-6 w-6"
-        >
-          <ChevronsUpDown className="w-3.5 h-3.5" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleExpandAll}
+            title="Expand / Collapse all"
+            className="h-6 w-6"
+          >
+            <ChevronsUpDown className="w-3.5 h-3.5" />
+          </Button>
+          {onToggleCollapse && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onToggleCollapse}
+              title="Collapse Layers Tree"
+              data-testid="layers-collapse-btn"
+              className="h-6 w-6 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Tree Content with ScrollArea */}

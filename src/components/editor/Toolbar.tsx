@@ -59,6 +59,11 @@ interface ToolbarProps {
   onOpenAIComposer: () => void;
   onOpenImportDialog: () => void;
   onOpenVersionHistory?: () => void;
+  onOpenOptimization?: () => void;
+  isLayersActive?: boolean;
+  onToggleLayers?: () => void;
+  isAIActive?: boolean;
+  isOptimizationActive?: boolean;
 }
 
 export function Toolbar({
@@ -81,6 +86,11 @@ export function Toolbar({
   onOpenAIComposer,
   onOpenImportDialog,
   onOpenVersionHistory,
+  onOpenOptimization,
+  isLayersActive,
+  onToggleLayers,
+  isAIActive,
+  isOptimizationActive,
 }: ToolbarProps) {
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
@@ -167,6 +177,25 @@ export function Toolbar({
             <Redo2 className="w-4 h-4" />
           </Button>
         </div>
+
+        {/* Layers Tree Toggle (Visible in Design Mode) */}
+        {editorMode === "design" && onToggleLayers && (
+          <Button
+            variant={isLayersActive ? "secondary" : "ghost"}
+            size="sm"
+            onClick={onToggleLayers}
+            data-testid="toolbar-btn-layers"
+            className={
+              isLayersActive
+                ? "gap-1.5 text-xs font-medium bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
+                : "gap-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+            }
+            title={isLayersActive ? "Collapse Layers Tree" : "Expand Layers Tree"}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span className="hidden xl:inline">Layers</span>
+          </Button>
+        )}
 
         {/* Save Status Badge */}
         <div className="hidden lg:flex items-center gap-1.5 text-xs text-zinc-500">
@@ -287,13 +316,37 @@ export function Toolbar({
           </Button>
         )}
 
+        {/* Analyze UX Trigger */}
+        {onOpenOptimization && (
+          <Button
+            variant={isOptimizationActive ? "default" : "outline"}
+            size="sm"
+            onClick={onOpenOptimization}
+            data-testid="toolbar-btn-analyze-ux"
+            className={
+              isOptimizationActive
+                ? "gap-1.5 font-medium bg-indigo-600 text-white hover:bg-indigo-700 shadow-xs"
+                : "gap-1.5 font-medium border-indigo-200 dark:border-indigo-900 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950"
+            }
+            title="Analyze UX Quality & Accessibility"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span className="hidden md:inline">Analyze UX</span>
+          </Button>
+        )}
+
         {/* Ask AI Trigger */}
         <Button
-          variant="default"
+          variant={isAIActive ? "default" : "outline"}
           size="sm"
           onClick={onOpenAIComposer}
           data-testid="toolbar-btn-ask-ai"
-          className="gap-1.5 font-medium bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+          className={
+            isAIActive
+              ? "gap-1.5 font-medium bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 shadow-xs"
+              : "gap-1.5 font-medium border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-900"
+          }
+          title={isAIActive ? "Close AI Assistant" : "Ask AI Assistant"}
         >
           <Sparkles className="w-3.5 h-3.5" />
           <span>Ask AI</span>

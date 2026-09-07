@@ -165,7 +165,7 @@ function SelectedNodeProperties({
 
   return (
     <aside
-      className="w-80 bg-white dark:bg-zinc-950 border-l border-zinc-200 dark:border-zinc-800 flex flex-col shrink-0 h-full overflow-hidden text-zinc-900 dark:text-zinc-100 text-xs select-none transition-colors"
+      className="w-full bg-white dark:bg-zinc-950 flex flex-col shrink-0 h-full overflow-hidden text-zinc-900 dark:text-zinc-100 text-xs select-none transition-colors"
       data-testid="properties-panel"
     >
       {/* Header */}
@@ -733,7 +733,7 @@ export function PropertiesPanel({
   if (!selectedNode) {
     return (
       <aside
-        className="w-80 bg-white dark:bg-zinc-950 border-l border-zinc-200 dark:border-zinc-800 flex flex-col shrink-0 h-full overflow-hidden select-none transition-colors"
+        className="w-full bg-white dark:bg-zinc-950 flex flex-col shrink-0 h-full overflow-hidden select-none transition-colors"
         data-testid="properties-panel"
       >
         <div className="h-10 px-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center gap-2 text-xs font-semibold text-zinc-800 dark:text-zinc-200">

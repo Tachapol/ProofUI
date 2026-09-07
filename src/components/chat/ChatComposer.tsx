@@ -30,7 +30,8 @@ interface ChatComposerProps {
   onSendGenerate: (
     instruction: string,
     scope: "new_page" | "new_version",
-    attachments: ChatAttachment[]
+    attachments: ChatAttachment[],
+    provider: "qwen" | "gemini" | "mock"
   ) => Promise<void>;
   onCancel: () => void;
   initialPrompt?: string;
@@ -53,8 +54,8 @@ export function ChatComposer({
   );
   const [generateScope] = useState<"new_page" | "new_version">("new_version");
   const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
-  const [selectedModel, setSelectedModel] = useState("GPT-5.6 Terra");
-  const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState<"qwen" | "gemini" | "mock">("gemini");
+  const [isProviderDropdownOpen, setIsProviderDropdownOpen] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -86,7 +87,7 @@ export function ChatComposer({
     if (mode === "edit") {
       onSendEdit(instruction.trim(), editScope, attachments);
     } else {
-      onSendGenerate(instruction.trim(), generateScope, attachments);
+      onSendGenerate(instruction.trim(), generateScope, attachments, selectedProvider);
     }
 
     setInstruction("");
@@ -294,34 +295,38 @@ export function ChatComposer({
             <PenLine className="w-3.5 h-3.5" />
           </button>
 
-          {/* Model Selector Pill */}
+          {/* Provider Selector Pill */}
           <div className="relative">
             <button
               type="button"
-              onClick={() => setIsModelDropdownOpen((prev) => !prev)}
+              onClick={() => setIsProviderDropdownOpen((prev) => !prev)}
               className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-zinc-900/90 border border-zinc-800 hover:bg-zinc-800 hover:text-white transition-colors text-zinc-300 text-xs font-medium cursor-pointer"
             >
-              <span>{selectedModel}</span>
+              <span>{selectedProvider === "qwen" ? "Qwen" : selectedProvider === "gemini" ? "Gemini" : "Mock"}</span>
               <ChevronDown className="w-3 h-3 text-zinc-400 shrink-0" />
             </button>
 
-            {isModelDropdownOpen && (
+            {isProviderDropdownOpen && (
               <div className="absolute left-0 bottom-full mb-1.5 w-44 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl z-50 p-1 flex flex-col gap-0.5">
-                {["GPT-5.6 Terra", "Claude 3.7 Sonnet", "Mock Tailwind Engine"].map((m) => (
+                {[
+                  { value: "qwen" as const, label: "Qwen" },
+                  { value: "gemini" as const, label: "Gemini" },
+                  { value: "mock" as const, label: "Mock Tailwind Engine" },
+                ].map((option) => (
                   <button
-                    key={m}
+                    key={option.value}
                     type="button"
                     onClick={() => {
-                      setSelectedModel(m);
-                      setIsModelDropdownOpen(false);
+                      setSelectedProvider(option.value);
+                      setIsProviderDropdownOpen(false);
                     }}
                     className={`px-2.5 py-1.5 rounded-lg text-xs text-left cursor-pointer transition-colors ${
-                      selectedModel === m
+                      selectedProvider === option.value
                         ? "bg-zinc-800 text-white font-medium"
                         : "text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200"
                     }`}
                   >
-                    {m}
+                    {option.label}
                   </button>
                 ))}
               </div>

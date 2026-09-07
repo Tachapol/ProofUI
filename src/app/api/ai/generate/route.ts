@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
 
     let provider;
     try {
-      provider = createGenerationProvider();
+      provider = createGenerationProvider(request.provider);
     } catch (err) {
       if (err instanceof GenerationError) {
         return NextResponse.json(

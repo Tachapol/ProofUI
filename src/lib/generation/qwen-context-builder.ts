@@ -27,6 +27,7 @@ const MAX_CURRENT_DOC_LENGTH = 6000;
  */
 function buildSystemPrompt(): string {
   return `You are a professional frontend web developer assistant. Your task is to generate complete, production-quality HTML pages using Tailwind CSS.
+Keep your internal reasoning concise and directly generate the required response.
 
 CRITICAL RULES:
 1. The user's explicit chat instruction is your ONLY generation goal.

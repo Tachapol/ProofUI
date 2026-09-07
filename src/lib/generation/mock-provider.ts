@@ -1,7 +1,189 @@
+import { JSDOM } from "jsdom";
 import { PageGenerationProvider } from "./provider";
 import { PageGenerationRequest, PageGenerationResult } from "./schemas";
 import { buildNormalizedContext } from "./source-precedence";
 import { sanitizeGeneratedHtml } from "./sanitizer";
+
+function applyMockOptimizations(
+  baseHtml: string,
+  instruction: string
+): { html: string; addressedTitles: string[] } {
+  const dom = new JSDOM(baseHtml);
+  const doc = dom.window.document;
+  const lower = instruction.toLowerCase();
+  const addressedTitles: string[] = [];
+
+  // 1. Image alt
+  if (lower.includes("img-alt") || lower.includes("image") || lower.includes("alt")) {
+    const images = doc.querySelectorAll("img:not([alt]), img[alt='']");
+    if (images.length > 0) {
+      images.forEach((img, idx) => {
+        img.setAttribute("alt", `Optimized visual graphic ${idx + 1}`);
+      });
+      addressedTitles.push("Images without alt attribute");
+    }
+  }
+
+  // 2. Accessible names
+  if (
+    lower.includes("accessible-name") ||
+    lower.includes("accessible name") ||
+    lower.includes("interactive")
+  ) {
+    const buttons = doc.querySelectorAll("button, a, [role='button'], [role='link']");
+    let fixed = false;
+    buttons.forEach((el) => {
+      const hasText = !!el.textContent?.trim();
+      const hasAria =
+        !!el.getAttribute("aria-label") ||
+        !!el.getAttribute("aria-labelledby") ||
+        !!el.getAttribute("title");
+      if (!hasText && !hasAria) {
+        el.setAttribute("aria-label", "Interactive action");
+        fixed = true;
+      }
+    });
+    if (fixed) {
+      addressedTitles.push("Interactive elements without accessible name");
+    }
+  }
+
+  // 3. Heading h1
+  if (lower.includes("heading-h1") || lower.includes("<h1>") || lower.includes("heading")) {
+    const h1s = doc.querySelectorAll("h1");
+    if (h1s.length === 0) {
+      const firstHeading = doc.querySelector("h2, h3, h4, h5, h6");
+      if (firstHeading) {
+        const h1 = doc.createElement("h1");
+        h1.className = firstHeading.className;
+        h1.innerHTML = firstHeading.innerHTML;
+        for (const attr of Array.from(firstHeading.attributes)) {
+          h1.setAttribute(attr.name, attr.value);
+        }
+        firstHeading.replaceWith(h1);
+      } else {
+        const body = doc.body;
+        const h1 = doc.createElement("h1");
+        h1.className = "text-4xl font-extrabold tracking-tight mb-4";
+        h1.textContent = "Optimized Page";
+        body.insertBefore(h1, body.firstChild);
+      }
+      addressedTitles.push("Missing or multiple <h1> headings");
+    } else if (h1s.length > 1) {
+      for (let i = 1; i < h1s.length; i++) {
+        const h2 = doc.createElement("h2");
+        h2.className = h1s[i].className;
+        h2.innerHTML = h1s[i].innerHTML;
+        for (const attr of Array.from(h1s[i].attributes)) {
+          h2.setAttribute(attr.name, attr.value);
+        }
+        h1s[i].replaceWith(h2);
+      }
+      addressedTitles.push("Missing or multiple <h1> headings");
+    }
+  }
+
+  // 4. Heading levels
+  if (lower.includes("heading-levels") || lower.includes("hierarchy")) {
+    const h3s = doc.querySelectorAll("h3");
+    h3s.forEach((h3) => {
+      const h2 = doc.createElement("h2");
+      h2.className = h3.className;
+      h2.innerHTML = h3.innerHTML;
+      for (const attr of Array.from(h3.attributes)) {
+        h2.setAttribute(attr.name, attr.value);
+      }
+      h3.replaceWith(h2);
+    });
+    addressedTitles.push("Skipped heading hierarchy");
+  }
+
+  // 5. Missing main
+  if (lower.includes("missing-main") || lower.includes("<main>") || lower.includes("landmark")) {
+    if (!doc.querySelector("main") && !doc.querySelector("[role='main']")) {
+      const main = doc.createElement("main");
+      const bodyChildren = Array.from(doc.body.children);
+      const header = bodyChildren.find((c) => c.tagName.toLowerCase() === "header");
+      const footer = bodyChildren.find((c) => c.tagName.toLowerCase() === "footer");
+      const targetChildren = bodyChildren.filter(
+        (c) => c !== header && c !== footer && c.tagName.toLowerCase() !== "script"
+      );
+
+      if (targetChildren.length > 0) {
+        targetChildren[0].before(main);
+        targetChildren.forEach((c) => main.appendChild(c));
+      } else {
+        doc.body.appendChild(main);
+      }
+      addressedTitles.push("Missing <main> landmark");
+    }
+  }
+
+  // 6. Mobile overflow at 390px
+  if (lower.includes("mobile-overflow") || lower.includes("390px") || lower.includes("overflow")) {
+    const fixedWidthElements = doc.querySelectorAll("[class*='w-['], [class*='min-w-[']");
+    fixedWidthElements.forEach((el) => {
+      let cls = el.getAttribute("class") || "";
+      cls = cls.replace(/w-\[\d+px\]/g, "max-w-full w-full").replace(/min-w-\[\d+px\]/g, "min-w-0");
+      el.setAttribute("class", cls);
+    });
+    addressedTitles.push("Potential mobile layout overflow at 390px");
+  }
+
+  // 7. Touch target
+  if (lower.includes("touch-target") || lower.includes("touch target") || lower.includes("44")) {
+    const smallTargets = doc.querySelectorAll("button, a");
+    smallTargets.forEach((el) => {
+      const cls = el.getAttribute("class") || "";
+      if (!cls.includes("min-h-[44px]") && !cls.includes("h-11") && !cls.includes("h-12")) {
+        el.setAttribute(
+          "class",
+          `${cls} min-h-[44px] min-w-[44px] inline-flex items-center justify-center`.trim()
+        );
+      }
+    });
+    addressedTitles.push("Touch target likely smaller than 44x44 px");
+  }
+
+  // 8. CTA heuristic
+  if (lower.includes("cta") || lower.includes("call-to-action") || lower.includes("conversion")) {
+    const ctas = doc.querySelectorAll("a, button");
+    let found = false;
+    ctas.forEach((el) => {
+      const txt = el.textContent?.toLowerCase() || "";
+      if (
+        txt.includes("get started") ||
+        txt.includes("start") ||
+        txt.includes("try") ||
+        txt.includes("sign up")
+      ) {
+        let cls = el.getAttribute("class") || "";
+        if (!cls.includes("bg-")) {
+          cls += " bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md px-5 py-2.5 rounded-xl";
+          el.setAttribute("class", cls.trim());
+          found = true;
+        }
+      }
+    });
+    if (!found && doc.body) {
+      const newCta = doc.createElement("a");
+      newCta.setAttribute("href", "#get-started");
+      newCta.setAttribute(
+        "class",
+        "inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-md"
+      );
+      newCta.textContent = "Get Started Today";
+      doc.body.appendChild(newCta);
+    }
+    addressedTitles.push("No prominent call-to-action (CTA) detected");
+  }
+
+  const html = doc.documentElement ? doc.documentElement.outerHTML : doc.body.outerHTML;
+  return {
+    html: `<!DOCTYPE html>\n${html}`,
+    addressedTitles: Array.from(new Set(addressedTitles)),
+  };
+}
 
 export class MockPageGenerationProvider implements PageGenerationProvider {
   async generate(
@@ -19,6 +201,66 @@ export class MockPageGenerationProvider implements PageGenerationProvider {
 
     onProgress?.("Preparing context");
     await new Promise((r) => setTimeout(r, 40));
+
+    // Check if this is a surgical optimization request on current document
+    const isOptimization =
+      request.scope === "new_version" &&
+      !!request.context.currentDocument?.html &&
+      (request.instruction.toLowerCase().includes("ux finding") ||
+        request.instruction.toLowerCase().includes("resolve the following") ||
+        (request.context.currentDocument.outline &&
+          request.context.currentDocument.outline.length > 0));
+
+    if (isOptimization && request.context.currentDocument?.html) {
+      onProgress?.("Analyzing selected findings");
+      await new Promise((r) => setTimeout(r, 40));
+
+      if (signal?.aborted) {
+        throw new DOMException("Generation aborted", "AbortError");
+      }
+
+      onProgress?.("Generating optimization");
+      const { html: optimizedRaw, addressedTitles } = applyMockOptimizations(
+        request.context.currentDocument.html,
+        request.instruction
+      );
+      await new Promise((r) => setTimeout(r, 40));
+
+      onProgress?.("Validating HTML");
+      const sanitized = sanitizeGeneratedHtml(optimizedRaw);
+
+      onProgress?.("Preparing preview");
+      await new Promise((r) => setTimeout(r, 40));
+
+      const summary =
+        addressedTitles.length > 0
+          ? `Addressed ${addressedTitles.length} UX finding${addressedTitles.length > 1 ? "s" : ""}: ${addressedTitles.join("; ")}`
+          : `Addressed selected UX findings on document revision ${request.basedOnRevision}`;
+
+      return {
+        id: `gen_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        requestId: request.requestId,
+        conversationId: request.conversationId,
+        basedOnRevision: request.basedOnRevision,
+        scope: request.scope,
+        summary,
+        html: sanitized.sanitizedHtml,
+        warnings: [],
+        attachmentIds: request.attachmentIds,
+        sourcePrecedence: {
+          sources: [
+            { sourceId: "current-doc", role: "current-document" },
+            { sourceId: "user-goal", role: "user-goal" },
+          ],
+          conflicts: [],
+        },
+        validation: {
+          valid: sanitized.isValid,
+          diagnostics: sanitized.diagnostics,
+        },
+        createdAt: new Date().toISOString(),
+      };
+    }
 
     onProgress?.("Reading attachments");
     const normalized = buildNormalizedContext(request);

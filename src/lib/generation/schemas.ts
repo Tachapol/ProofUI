@@ -76,6 +76,7 @@ export const PageGenerationRequestSchema = z.object({
     designTokens: CapturePackageSchema.shape.designTokens.optional(),
     assets: CapturePackageSchema.shape.assets.optional(),
   }),
+  provider: z.enum(["qwen", "gemini", "mock"]).optional(),
 });
 export type PageGenerationRequest = z.infer<typeof PageGenerationRequestSchema>;
 

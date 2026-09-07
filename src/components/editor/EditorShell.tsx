@@ -5,11 +5,14 @@ import { Toolbar, SaveStatus, EditorMode, ThemeMode } from "./Toolbar";
 import { LayersPanel } from "./LayersPanel";
 import { ViewportCanvas } from "./ViewportCanvas";
 import { PropertiesPanel } from "./PropertiesPanel";
+import { OptimizationPanel } from "./OptimizationPanel";
 import { CodeEditorPanel } from "./CodeEditorPanel";
 import { ChatSidebar } from "../chat/ChatSidebar";
 import { GenerationPreviewBanner } from "../chat/GenerationPreviewBanner";
 import { VersionHistoryDialog } from "../chat/VersionHistoryDialog";
 import { AIProposalReview } from "./AIProposalReview";
+import { Sparkles, ChevronRight, Sliders } from "lucide-react";
+import { UXAnalysisResult } from "@/lib/optimization/schemas";
 import {
   SerializedNode,
   DOMRectData,
@@ -60,6 +63,8 @@ export function EditorShell() {
   const [editorMode, setEditorMode] = useState<EditorMode>("design");
   const [viewport, setViewport] = useState<ViewportMode>("desktop");
   const [documentTree, setDocumentTree] = useState<SerializedNode | null>(null);
+  const [rightSidebarTab, setRightSidebarTab] = useState<"properties" | "optimization">("properties");
+  const [uxAnalysis, setUxAnalysis] = useState<UXAnalysisResult | null>(null);
 
   // Theme state: default to dark mode with local persistence
   const [theme, setTheme] = useState<ThemeMode>(() => {
@@ -166,6 +171,39 @@ export function EditorShell() {
     storageKey: "proof_ui_chat_sidebar_width",
     defaultWidth: initialProject?.sidebar?.width || 380,
     defaultCollapsed: initialProject?.sidebar?.isCollapsed ?? true,
+    side: "left",
+  });
+
+  // Layers Panel Resizable Hook
+  const {
+    width: layersWidth,
+    isCollapsed: isLayersCollapsed,
+    toggleCollapse: toggleLayersCollapse,
+    handleMouseDown: handleLayersMouseDown,
+    handleKeyDown: handleLayersKeyDown,
+  } = useResizablePanel({
+    storageKey: "proof_ui_layers_panel_width",
+    defaultWidth: 260,
+    minWidth: 200,
+    maxWidth: 480,
+    defaultCollapsed: false,
+    side: "left",
+  });
+
+  // Right Sidebar (Properties / UX Analyzer) Resizable Hook
+  const {
+    width: rightSidebarWidth,
+    isCollapsed: isRightSidebarCollapsed,
+    toggleCollapse: toggleRightSidebarCollapse,
+    handleMouseDown: handleRightSidebarMouseDown,
+    handleKeyDown: handleRightSidebarKeyDown,
+  } = useResizablePanel({
+    storageKey: "proof_ui_right_sidebar_width",
+    defaultWidth: 320,
+    minWidth: 260,
+    maxWidth: 640,
+    defaultCollapsed: false,
+    side: "right",
   });
 
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
@@ -306,6 +344,30 @@ export function EditorShell() {
     setCandidate(newCandidate);
     setCandidatesMap((prev) => new Map(prev).set(result.id, newCandidate));
   }, []);
+
+  // Optimization candidate ready handler (immediately activates preview banner)
+  const handleOptimizationCandidateReady = useCallback(
+    (result: PageGenerationResult) => {
+      const newCandidate: GenerationCandidate = {
+        result,
+        sanitizedHtml: result.html,
+        status: "ready",
+      };
+      setCandidate(newCandidate);
+      setCandidatesMap((prev) => new Map(prev).set(result.id, newCandidate));
+      setIsComparingOriginal(false);
+      sendToIframe({
+        source: "visual-editor-parent",
+        type: "SET_DOCUMENT_SOURCE",
+        payload: {
+          sessionId,
+          source: newCandidate.sanitizedHtml,
+          revision,
+        },
+      });
+    },
+    [sessionId, revision, sendToIframe]
+  );
 
   // Chat Workspace Hook
   const {
@@ -1045,12 +1107,24 @@ export function EditorShell() {
         saveStatus={saveStatus}
         onResetDocument={handleResetDocument}
         onOpenAIComposer={() => {
-          if (isSidebarCollapsed) {
-            toggleSidebarCollapse();
-          }
+          toggleSidebarCollapse();
         }}
+        isAIActive={!isSidebarCollapsed}
+        onToggleLayers={toggleLayersCollapse}
+        isLayersActive={!isLayersCollapsed}
         onOpenImportDialog={() => setShowImportDialog(true)}
         onOpenVersionHistory={() => setShowVersionHistoryDialog(true)}
+        onOpenOptimization={() => {
+          if (isRightSidebarCollapsed) {
+            setRightSidebarTab("optimization");
+            toggleRightSidebarCollapse();
+          } else if (rightSidebarTab === "optimization") {
+            toggleRightSidebarCollapse();
+          } else {
+            setRightSidebarTab("optimization");
+          }
+        }}
+        isOptimizationActive={!isRightSidebarCollapsed && rightSidebarTab === "optimization"}
       />
 
       {/* Editor Body */}
@@ -1091,8 +1165,8 @@ export function EditorShell() {
           onSendEdit={(instruction, scope) =>
             submitEdit(instruction, scope, [])
           }
-          onSendGenerate={(instruction, scope, attachments, genContext) =>
-            submitGenerate(instruction, scope, attachments, genContext)
+          onSendGenerate={(instruction, scope, attachments, genContext, provider) =>
+            submitGenerate(instruction, scope, attachments, genContext, provider)
           }
           onCancel={handleCancelAI}
         />
@@ -1117,6 +1191,11 @@ export function EditorShell() {
                 hoveredId={hoveredId}
                 onSelectNode={handleSelectNode}
                 onHoverNode={handleHoverNode}
+                width={layersWidth}
+                isCollapsed={isLayersCollapsed}
+                onToggleCollapse={toggleLayersCollapse}
+                onMouseDownResize={handleLayersMouseDown}
+                onKeyDownResize={handleLayersKeyDown}
               />
             )}
 
@@ -1146,15 +1225,132 @@ export function EditorShell() {
               />
             </div>
 
-            {/* Properties Panel: active in Design Mode */}
+            {/* Right Sidebar: Properties & Optimization Panels in Design Mode */}
             {editorMode === "design" && (
-              <PropertiesPanel
-                selectedNode={selectedNode}
-                breadcrumbNodes={selectionPathNodes}
-                onApplyOperation={handleApplyOperation}
-                onDuplicateNode={handleDuplicateNode}
-                onDeleteNode={handleDeleteNode}
-              />
+              isRightSidebarCollapsed ? (
+                <aside
+                  className="w-10 bg-white dark:bg-zinc-950 border-l border-zinc-200 dark:border-zinc-800 flex flex-col items-center py-2 shrink-0 h-full select-none transition-colors gap-2"
+                  data-testid="right-sidebar-collapsed"
+                >
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      setRightSidebarTab("properties");
+                      toggleRightSidebarCollapse();
+                    }}
+                    title="Open Properties"
+                    data-testid="right-sidebar-expand-properties-btn"
+                    className={`h-7 w-7 ${
+                      rightSidebarTab === "properties"
+                        ? "text-indigo-600 dark:text-indigo-400"
+                        : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+                    }`}
+                  >
+                    <Sliders className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      setRightSidebarTab("optimization");
+                      toggleRightSidebarCollapse();
+                    }}
+                    title="Open UX Analyzer"
+                    data-testid="right-sidebar-expand-optimization-btn"
+                    className={`h-7 w-7 ${
+                      rightSidebarTab === "optimization"
+                        ? "text-indigo-600 dark:text-indigo-400"
+                        : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+                    }`}
+                  >
+                    <Sparkles className="w-4 h-4 text-indigo-500" />
+                  </Button>
+                </aside>
+              ) : (
+                <div
+                  className="relative flex flex-col h-full shrink-0 select-none"
+                  style={{ width: `${rightSidebarWidth}px` }}
+                  data-testid="right-sidebar-container"
+                >
+                  {/* Left resizer for right sidebar */}
+                  <div
+                    className="absolute top-0 left-0 w-1.5 h-full cursor-col-resize hover:bg-indigo-500/50 active:bg-indigo-500 transition-colors z-30"
+                    onMouseDown={handleRightSidebarMouseDown}
+                    onKeyDown={handleRightSidebarKeyDown}
+                    role="separator"
+                    aria-label="Resize right sidebar"
+                    data-testid="right-sidebar-resizer"
+                    tabIndex={0}
+                  />
+
+                  {/* Tab switcher + Close Button */}
+                  <div className="h-8 px-2 bg-zinc-100/90 dark:bg-zinc-900/90 border-l border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between shrink-0 select-none z-10">
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        data-testid="tab-properties"
+                        onClick={() => setRightSidebarTab("properties")}
+                        className={`px-2.5 py-0.5 text-xs font-medium rounded transition-colors cursor-pointer ${
+                          rightSidebarTab === "properties"
+                            ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-xs"
+                            : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                        }`}
+                      >
+                        Properties
+                      </button>
+                      <button
+                        type="button"
+                        data-testid="tab-optimization"
+                        onClick={() => setRightSidebarTab("optimization")}
+                        className={`px-2.5 py-0.5 text-xs font-medium rounded transition-colors flex items-center gap-1.5 cursor-pointer ${
+                          rightSidebarTab === "optimization"
+                            ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-xs"
+                            : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                        }`}
+                      >
+                        <Sparkles className="w-3 h-3 text-indigo-500" />
+                        <span>UX Analyzer</span>
+                      </button>
+                    </div>
+
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={toggleRightSidebarCollapse}
+                      title="Collapse Panel"
+                      data-testid="right-sidebar-collapse-btn"
+                      className="h-6 w-6 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+                    >
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+
+                  <div className="flex-1 overflow-hidden">
+                    {rightSidebarTab === "properties" ? (
+                      <PropertiesPanel
+                        selectedNode={selectedNode}
+                        breadcrumbNodes={selectionPathNodes}
+                        onApplyOperation={handleApplyOperation}
+                        onDuplicateNode={handleDuplicateNode}
+                        onDeleteNode={handleDeleteNode}
+                      />
+                    ) : (
+                      <OptimizationPanel
+                        canonicalHtml={canonicalSource}
+                        currentRevision={revision}
+                        selectedId={selectedId}
+                        onSelectNode={handleSelectNode}
+                        viewport={viewport}
+                        onViewportChange={setViewport}
+                        analysis={uxAnalysis}
+                        onAnalysisChange={setUxAnalysis}
+                        onOptimizationResultReady={handleOptimizationCandidateReady}
+                      />
+                    )}
+                  </div>
+                </div>
+              )
             )}
           </>
         )}

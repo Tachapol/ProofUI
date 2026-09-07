@@ -1,18 +1,26 @@
 import { PageGenerationProvider } from "./provider";
 import { MockPageGenerationProvider } from "./mock-provider";
 import { QwenPageGenerationProvider } from "./qwen-provider";
+import { GeminiPageGenerationProvider } from "./gemini-provider";
+import { GenerationError } from "./qwen-provider";
 
 /**
  * Server-side factory for generation providers.
- * The provider is determined by the AI_PROVIDER environment variable.
- * The client cannot choose or influence provider selection.
+ * The provider can be specified by the client or fall back to AI_PROVIDER environment variable.
  */
-export function createGenerationProvider(): PageGenerationProvider {
-  const provider = process.env.AI_PROVIDER;
+export function createGenerationProvider(provider?: "qwen" | "gemini" | "mock"): PageGenerationProvider {
+  if (process.env.PROOF_UI_ENABLE_TEST_FIXTURES === "true") {
+    return new MockPageGenerationProvider();
+  }
 
-  switch (provider) {
+  const selectedProvider = provider ?? process.env.AI_PROVIDER;
+
+  switch (selectedProvider) {
     case "qwen":
       return new QwenPageGenerationProvider();
+
+    case "gemini":
+      return new GeminiPageGenerationProvider();
 
     case "mock":
     case undefined:
@@ -20,6 +28,9 @@ export function createGenerationProvider(): PageGenerationProvider {
       return new MockPageGenerationProvider();
 
     default:
-      throw new Error(`Unsupported AI_PROVIDER: "${provider}". Use "qwen" or "mock".`);
+      throw new GenerationError(
+        `Unsupported AI provider: "${selectedProvider}". Use "gemini", "qwen", or "mock".`,
+        "PROVIDER_NOT_CONFIGURED"
+      );
   }
 }

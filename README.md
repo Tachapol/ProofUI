@@ -28,6 +28,14 @@ AI_MODEL=your-qwen-model
 AI_API_KEY=your-rotated-server-side-key
 ```
 
+For Google Gemini, use this alternative configuration:
+
+```bash
+AI_PROVIDER=gemini
+GEMINI_MODEL=gemini-flash-latest
+GEMINI_API_KEY=your-rotated-server-side-key
+```
+
 Restart the development server after changing environment variables. Keep the
 API key server-side: never prefix it with `NEXT_PUBLIC_`, commit it, paste it
 into browser code, or expose it through an API response. If a key has appeared

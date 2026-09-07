@@ -253,7 +253,8 @@ export function useChatWorkspace({
       instruction: string,
       scope: "new_page" | "new_version",
       attachments: ChatAttachment[] = [],
-      generationContext: PageGenerationRequest["context"]
+      generationContext: PageGenerationRequest["context"],
+      provider: "qwen" | "gemini" | "mock" = "qwen"
     ) => {
       if (!instruction.trim() || isProcessing) return;
 
@@ -299,15 +300,16 @@ export function useChatWorkspace({
       setMessages((prev) => [...prev, initialAssistantMsg]);
 
       try {
-        const reqPayload: PageGenerationRequest = {
-          requestId: `req_${Date.now()}`,
-          conversationId: conv.id,
-          instruction: instruction.trim(),
-          scope,
-          basedOnRevision: documentRevision,
-          attachmentIds: attachments.map((a) => a.id),
-          context: generationContext,
-        };
+const reqPayload: PageGenerationRequest = {
+        requestId: `req_${Date.now()}`,
+        conversationId: conv.id,
+        instruction: instruction.trim(),
+        scope,
+        basedOnRevision: documentRevision,
+        attachmentIds: attachments.map((a) => a.id),
+        context: generationContext,
+        provider,
+      };
 
         const res = await fetch("/api/ai/generate", {
           method: "POST",
