@@ -12,7 +12,7 @@ import { GenerationPreviewBanner } from "../chat/GenerationPreviewBanner";
 import { VersionHistoryDialog } from "../chat/VersionHistoryDialog";
 import { AIProposalReview } from "./AIProposalReview";
 import { Sparkles, ChevronRight, Sliders } from "lucide-react";
-import { UXAnalysisResult } from "@/lib/optimization/schemas";
+import { UXAnalysisResult, OptimizationComparison } from "@/lib/optimization/schemas";
 import {
   SerializedNode,
   DOMRectData,
@@ -21,6 +21,7 @@ import {
 } from "@/lib/bridge/types";
 import { getNodePath, findNodeById } from "@/lib/dom/serializer";
 import { ViewportMode, EDITOR_CONFIG } from "@/lib/editor/constants";
+import { useFrameDimensions } from "@/lib/editor/useFrameDimensions";
 import { EditorOperation } from "@/lib/editor/operation-schema";
 import { applyOperationToDocument } from "@/lib/editor/operations";
 import { HistoryManager } from "@/lib/editor/history";
@@ -62,6 +63,17 @@ export function EditorShell() {
 
   const [editorMode, setEditorMode] = useState<EditorMode>("design");
   const [viewport, setViewport] = useState<ViewportMode>("desktop");
+  const {
+    frameWidth,
+    frameHeight,
+    setWidth: setFrameWidth,
+    setHeight: setFrameHeight,
+    adjustWidth,
+    adjustHeight,
+    resetFrameSize,
+    startResize: startFrameResize,
+    isResizing: isResizingFrame,
+  } = useFrameDimensions(viewport);
   const [documentTree, setDocumentTree] = useState<SerializedNode | null>(null);
   const [rightSidebarTab, setRightSidebarTab] = useState<"properties" | "optimization">("properties");
   const [uxAnalysis, setUxAnalysis] = useState<UXAnalysisResult | null>(null);
@@ -336,10 +348,16 @@ export function EditorShell() {
 
   // Candidate generation ready handler
   const handleGenerationResultReady = useCallback((result: PageGenerationResult) => {
+    const comparison =
+      result.optimizationComparison ||
+      (result as { comparison?: OptimizationComparison }).comparison;
     const newCandidate: GenerationCandidate = {
       result,
       sanitizedHtml: result.html,
       status: "ready",
+      usage: result.usage,
+      durationMs: result.durationMs,
+      optimizationComparison: comparison,
     };
     setCandidate(newCandidate);
     setCandidatesMap((prev) => new Map(prev).set(result.id, newCandidate));
@@ -348,10 +366,16 @@ export function EditorShell() {
   // Optimization candidate ready handler (immediately activates preview banner)
   const handleOptimizationCandidateReady = useCallback(
     (result: PageGenerationResult) => {
+      const comparison =
+        result.optimizationComparison ||
+        (result as { comparison?: OptimizationComparison }).comparison;
       const newCandidate: GenerationCandidate = {
         result,
         sanitizedHtml: result.html,
         status: "ready",
+        usage: result.usage,
+        durationMs: result.durationMs,
+        optimizationComparison: comparison,
       };
       setCandidate(newCandidate);
       setCandidatesMap((prev) => new Map(prev).set(result.id, newCandidate));
@@ -1092,6 +1116,13 @@ export function EditorShell() {
       <Toolbar
         viewport={viewport}
         onViewportChange={setViewport}
+        frameWidth={frameWidth}
+        frameHeight={frameHeight}
+        onWidthChange={setFrameWidth}
+        onHeightChange={setFrameHeight}
+        onAdjustWidth={adjustWidth}
+        onAdjustHeight={adjustHeight}
+        onResetFrameSize={resetFrameSize}
         editorMode={editorMode}
         onModeChange={handleModeChange}
         theme={theme}
@@ -1222,6 +1253,11 @@ export function EditorShell() {
                 hoveredId={hoveredId}
                 onIframeLoad={handleIframeLoad}
                 editorMode={editorMode}
+                frameWidth={frameWidth}
+                frameHeight={frameHeight}
+                isResizing={isResizingFrame}
+                onStartResize={startFrameResize}
+                onResetFrameSize={resetFrameSize}
               />
             </div>
 
@@ -1346,6 +1382,9 @@ export function EditorShell() {
                         analysis={uxAnalysis}
                         onAnalysisChange={setUxAnalysis}
                         onOptimizationResultReady={handleOptimizationCandidateReady}
+                        candidate={activeCandidate}
+                        onApplyCandidate={handleApplyCandidate}
+                        onRejectCandidate={handleRejectCandidate}
                       />
                     )}
                   </div>

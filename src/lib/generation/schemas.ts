@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { CapturePackageSchema } from "../import/schemas";
 import { CodeDiagnosticSchema } from "../code/diagnostics";
+import { OptimizationComparisonSchema } from "../optimization/schemas";
 
 // Document Versioning Metadata
 export const DocumentVersionSourceSchema = z.enum([
@@ -105,6 +106,15 @@ export const GenerationErrorCodeSchema = z.enum([
 ]);
 export type GenerationErrorCode = z.infer<typeof GenerationErrorCodeSchema>;
 
+// Token Usage and Duration Tracking
+export const GenerationUsageSchema = z.object({
+  promptTokens: z.number().default(0),
+  completionTokens: z.number().default(0),
+  totalTokens: z.number().default(0),
+  durationMs: z.number().optional(),
+});
+export type GenerationUsage = z.infer<typeof GenerationUsageSchema>;
+
 // Page Generation Result
 export const PageGenerationResultSchema = z.object({
   id: z.string(),
@@ -124,6 +134,9 @@ export const PageGenerationResultSchema = z.object({
   providerName: z.string().optional(),
   modelName: z.string().optional(),
   createdAt: z.string(),
+  usage: GenerationUsageSchema.optional(),
+  durationMs: z.number().optional(),
+  optimizationComparison: OptimizationComparisonSchema.optional(),
 });
 export type PageGenerationResult = z.infer<typeof PageGenerationResultSchema>;
 
@@ -133,6 +146,9 @@ export const GenerationCandidateSchema = z.object({
   sanitizedHtml: z.string(),
   parentGenerationId: z.string().optional(),
   status: z.enum(["ready", "applied", "rejected", "stale"]),
+  usage: GenerationUsageSchema.optional(),
+  durationMs: z.number().optional(),
+  optimizationComparison: OptimizationComparisonSchema.optional(),
 });
 export type GenerationCandidate = z.infer<typeof GenerationCandidateSchema>;
 

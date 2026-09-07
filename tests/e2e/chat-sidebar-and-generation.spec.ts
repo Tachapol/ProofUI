@@ -209,4 +209,58 @@ test.describe("Milestone 4.5: Chat Sidebar, Full-Page Generation, and Version Hi
     await expect(frame.locator('[data-editor-id="hero-title"]')).toBeVisible();
     await expect(frame.locator('[data-editor-id="hero-title"]')).toContainText(originalText.slice(0, 8));
   });
+
+  test("displays live generation timer, token metrics (in/out), and surfaces failed generation clearly instead of disappearing", async ({
+    page,
+  }) => {
+    // 1. Ensure chat sidebar is open
+    await page.goto("/");
+    await page.waitForSelector('[data-layer-id="body-root"]', { timeout: 15000 });
+
+    const chatSidebar = page.locator('[data-testid="ai-composer-panel"]');
+    if (!(await chatSidebar.isVisible())) {
+      const askAiBtn = page.locator('[data-testid="toolbar-btn-ask-ai"]');
+      if (await askAiBtn.isVisible()) {
+        await askAiBtn.click();
+      } else {
+        await page.click('[data-testid="chat-expand-btn"]');
+      }
+      await expect(chatSidebar).toBeVisible();
+    }
+
+    // 2. Normal generation to verify live timer & token metrics
+    const textarea = page.locator('[data-testid="ai-instruction-input"]');
+    await textarea.fill("Create a landing page with hero CTA");
+    const submitBtn = page.locator('[data-testid="btn-generate-ai-edit"]');
+    await submitBtn.click();
+
+    // Result card appears
+    const resultCard = page.locator('[data-testid="generation-result-card"]').first();
+    await expect(resultCard).toBeVisible({ timeout: 15000 });
+
+    // Verify token metrics (Token In, Token Out)
+    const tokenMetrics = resultCard.locator('[data-testid="generation-token-metrics"]');
+    await expect(tokenMetrics).toBeVisible();
+    await expect(tokenMetrics).toContainText("Token In:");
+    await expect(tokenMetrics).toContainText("Token Out:");
+
+    // 3. Test failure case: mock route to return 500 error
+    await page.route("/api/ai/generate", async (route) => {
+      await route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "AI service connection timed out. Please try again." }),
+      });
+    });
+
+    await textarea.fill("This generation request will fail");
+    await submitBtn.click();
+
+    // Verify error card appears and is prominently visible (does not vanish)
+    const errorCard = page.locator('[data-testid="chat-error-card"]');
+    await expect(errorCard).toBeVisible({ timeout: 10000 });
+    await expect(errorCard).toContainText("Generation Failed");
+    await expect(errorCard).toContainText("AI service connection timed out. Please try again.");
+  });
 });
+

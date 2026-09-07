@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   ArrowUp,
   Square,
@@ -13,6 +13,7 @@ import {
   PenLine,
   AtSign,
   X,
+  Loader2,
 } from "lucide-react";
 import { AIEditScope } from "@/lib/ai/schemas";
 import { SerializedNode } from "@/lib/bridge/types";
@@ -42,6 +43,7 @@ export function ChatComposer({
   documentRevision,
   documentContext,
   isProcessing,
+  currentStage,
   onSendEdit,
   onSendGenerate,
   onCancel,
@@ -59,6 +61,19 @@ export function ChatComposer({
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  useEffect(() => {
+    if (!isProcessing) return;
+    const start = Date.now();
+    const timer = setInterval(() => {
+      setElapsedSeconds(Math.max(0, (Date.now() - start) / 1000));
+    }, 100);
+    return () => {
+      clearInterval(timer);
+    };
+  }, [isProcessing]);
 
   const [prevPrompt, setPrevPrompt] = useState(initialPrompt);
   if (initialPrompt && initialPrompt !== prevPrompt) {
@@ -259,6 +274,25 @@ export function ChatComposer({
           className="w-full resize-none bg-transparent px-1 py-1 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none leading-relaxed select-text disabled:opacity-50"
         />
       </div>
+
+      {/* Live Generation Status Banner */}
+      {isProcessing && (
+        <div
+          data-testid="composer-processing-status"
+          className="flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs text-blue-300 my-1.5"
+        >
+          <div className="flex items-center gap-2 truncate">
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-400 shrink-0" />
+            <span className="truncate font-medium">{currentStage || "Generating..."}</span>
+          </div>
+          <span
+            data-testid="composer-live-timer"
+            className="font-mono text-[11px] tabular-nums text-blue-400 shrink-0 font-semibold bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20"
+          >
+            {elapsedSeconds.toFixed(1)}s
+          </span>
+        </div>
+      )}
 
       {/* Attachments Chips if any */}
       {attachments.length > 0 && (

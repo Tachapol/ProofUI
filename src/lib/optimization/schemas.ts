@@ -123,7 +123,48 @@ export const UXOptimizationStageSchema = z.enum([
   "Analyzing selected findings",
   "Generating optimization",
   "Sanitizing candidate",
+  "Comparing evidence",
   "Complete",
 ]);
 export type UXOptimizationStage = z.infer<typeof UXOptimizationStageSchema>;
+
+export const OptimizationComparisonSchema = z.object({
+  baselineScore: z.number().min(0).max(100),
+  candidateScore: z.number().min(0).max(100),
+  scoreDelta: z.number(),
+  hasMeasurableImprovement: z.boolean(),
+  resolvedFindings: z.array(UXFindingSchema),
+  remainingFindings: z.array(UXFindingSchema),
+  newFindings: z.array(UXFindingSchema),
+  resolvedFindingIds: z.array(z.string()),
+  remainingFindingIds: z.array(z.string()),
+  newFindingIds: z.array(z.string()),
+  hasNewCriticalIssues: z.boolean(),
+  baselineFindingCount: z.number(),
+  candidateFindingCount: z.number(),
+});
+export type OptimizationComparison = z.infer<typeof OptimizationComparisonSchema>;
+
+export const UXOptimizationStreamEventSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("status"),
+    stage: UXOptimizationStageSchema,
+    message: z.string().optional(),
+  }),
+  z.object({
+    type: z.literal("result"),
+    candidateHtml: z.string(),
+    summary: z.string(),
+    warnings: z.array(z.string()),
+    comparison: OptimizationComparisonSchema.optional(),
+  }),
+  z.object({
+    type: z.literal("complete"),
+  }),
+  z.object({
+    type: z.literal("error"),
+    error: z.string(),
+  }),
+]);
+export type UXOptimizationStreamEvent = z.infer<typeof UXOptimizationStreamEventSchema>;
 

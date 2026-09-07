@@ -64,6 +64,13 @@ interface ToolbarProps {
   onToggleLayers?: () => void;
   isAIActive?: boolean;
   isOptimizationActive?: boolean;
+  frameWidth?: number;
+  frameHeight?: number;
+  onWidthChange?: (width: number) => void;
+  onHeightChange?: (height: number) => void;
+  onAdjustWidth?: (delta: number) => void;
+  onAdjustHeight?: (delta: number) => void;
+  onResetFrameSize?: () => void;
 }
 
 export function Toolbar({
@@ -91,6 +98,13 @@ export function Toolbar({
   onToggleLayers,
   isAIActive,
   isOptimizationActive,
+  frameWidth,
+  frameHeight,
+  onWidthChange,
+  onHeightChange,
+  onAdjustWidth,
+  onAdjustHeight,
+  onResetFrameSize,
 }: ToolbarProps) {
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
@@ -231,59 +245,151 @@ export function Toolbar({
         </div>
       </div>
 
-      {/* Center Viewport Switcher (Visible in Preview & Design modes) */}
+      {/* Center Viewport Switcher & Pixel Sizing (Visible in Preview & Design modes) */}
       {editorMode !== "code" && (
-        <div className="flex items-center gap-0.5 bg-zinc-100 dark:bg-zinc-900 p-0.5 rounded-md border border-zinc-200 dark:border-zinc-800">
-          <Button
-            variant={viewport === "desktop" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => onViewportChange("desktop")}
-            aria-label="Desktop viewport"
-            data-testid="viewport-desktop"
-            className={
-              viewport === "desktop"
-                ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-xs"
-                : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
-            }
-          >
-            <Monitor className="w-3.5 h-3.5" />
-            <span className="hidden md:inline">Desktop</span>
-            <span className="text-[10px] opacity-70 ml-0.5">{VIEWPORT_PRESETS.desktop.label}</span>
-          </Button>
+        <div className="flex items-center gap-1.5">
+          {/* Viewport Presets */}
+          <div className="flex items-center gap-0.5 bg-zinc-100 dark:bg-zinc-900 p-0.5 rounded-md border border-zinc-200 dark:border-zinc-800">
+            <Button
+              variant={viewport === "desktop" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => onViewportChange("desktop")}
+              aria-label="Desktop viewport"
+              data-testid="viewport-desktop"
+              className={
+                viewport === "desktop"
+                  ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-xs"
+                  : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+              }
+            >
+              <Monitor className="w-3.5 h-3.5" />
+              <span className="hidden md:inline">Desktop</span>
+              <span className="text-[10px] opacity-70 ml-0.5">{VIEWPORT_PRESETS.desktop.label}</span>
+            </Button>
 
-          <Button
-            variant={viewport === "tablet" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => onViewportChange("tablet")}
-            aria-label="Tablet viewport"
-            data-testid="viewport-tablet"
-            className={
-              viewport === "tablet"
-                ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-xs"
-                : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
-            }
-          >
-            <Tablet className="w-3.5 h-3.5" />
-            <span className="hidden md:inline">Tablet</span>
-            <span className="text-[10px] opacity-70 ml-0.5">{VIEWPORT_PRESETS.tablet.label}</span>
-          </Button>
+            <Button
+              variant={viewport === "tablet" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => onViewportChange("tablet")}
+              aria-label="Tablet viewport"
+              data-testid="viewport-tablet"
+              className={
+                viewport === "tablet"
+                  ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-xs"
+                  : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+              }
+            >
+              <Tablet className="w-3.5 h-3.5" />
+              <span className="hidden md:inline">Tablet</span>
+              <span className="text-[10px] opacity-70 ml-0.5">{VIEWPORT_PRESETS.tablet.label}</span>
+            </Button>
 
-          <Button
-            variant={viewport === "mobile" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => onViewportChange("mobile")}
-            aria-label="Mobile viewport"
-            data-testid="viewport-mobile"
-            className={
-              viewport === "mobile"
-                ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-xs"
-                : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
-            }
-          >
-            <Smartphone className="w-3.5 h-3.5" />
-            <span className="hidden md:inline">Mobile</span>
-            <span className="text-[10px] opacity-70 ml-0.5">{VIEWPORT_PRESETS.mobile.label}</span>
-          </Button>
+            <Button
+              variant={viewport === "mobile" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => onViewportChange("mobile")}
+              aria-label="Mobile viewport"
+              data-testid="viewport-mobile"
+              className={
+                viewport === "mobile"
+                  ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-xs"
+                  : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+              }
+            >
+              <Smartphone className="w-3.5 h-3.5" />
+              <span className="hidden md:inline">Mobile</span>
+              <span className="text-[10px] opacity-70 ml-0.5">{VIEWPORT_PRESETS.mobile.label}</span>
+            </Button>
+          </div>
+
+          {/* Frame Pixel Size Controls */}
+          {frameWidth !== undefined && frameHeight !== undefined && (
+            <div
+              data-testid="frame-size-controls"
+              className="hidden lg:flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-900 px-2 py-0.5 rounded-md border border-zinc-200 dark:border-zinc-800 text-xs font-mono"
+            >
+              {/* Width Controls */}
+              <div className="flex items-center gap-0.5">
+                <span className="text-[10px] text-zinc-400 font-semibold uppercase select-none mr-0.5">W</span>
+                <button
+                  type="button"
+                  onClick={(e) => onAdjustWidth?.(e.shiftKey ? -10 : -1)}
+                  data-testid="btn-decrease-width"
+                  title="Decrease width by 1px (Hold Shift for 10px)"
+                  className="w-4 h-5 flex items-center justify-center rounded text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-800 cursor-pointer text-xs"
+                >
+                  -
+                </button>
+                <input
+                  type="number"
+                  value={frameWidth}
+                  onChange={(e) => onWidthChange?.(parseInt(e.target.value, 10) || 320)}
+                  data-testid="frame-width-input"
+                  className="w-13 h-5 text-center text-xs bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  min={320}
+                  max={2560}
+                />
+                <button
+                  type="button"
+                  onClick={(e) => onAdjustWidth?.(e.shiftKey ? 10 : 1)}
+                  data-testid="btn-increase-width"
+                  title="Increase width by 1px (Hold Shift for 10px)"
+                  className="w-4 h-5 flex items-center justify-center rounded text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-800 cursor-pointer text-xs"
+                >
+                  +
+                </button>
+              </div>
+
+              <span className="text-zinc-400 text-[11px] select-none">×</span>
+
+              {/* Height Controls */}
+              <div className="flex items-center gap-0.5">
+                <span className="text-[10px] text-zinc-400 font-semibold uppercase select-none mr-0.5">H</span>
+                <button
+                  type="button"
+                  onClick={(e) => onAdjustHeight?.(e.shiftKey ? -10 : -1)}
+                  data-testid="btn-decrease-height"
+                  title="Decrease height by 1px (Hold Shift for 10px)"
+                  className="w-4 h-5 flex items-center justify-center rounded text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-800 cursor-pointer text-xs"
+                >
+                  -
+                </button>
+                <input
+                  type="number"
+                  value={frameHeight}
+                  onChange={(e) => onHeightChange?.(parseInt(e.target.value, 10) || 400)}
+                  data-testid="frame-height-input"
+                  className="w-13 h-5 text-center text-xs bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  min={400}
+                  max={3000}
+                />
+                <button
+                  type="button"
+                  onClick={(e) => onAdjustHeight?.(e.shiftKey ? 10 : 1)}
+                  data-testid="btn-increase-height"
+                  title="Increase height by 1px (Hold Shift for 10px)"
+                  className="w-4 h-5 flex items-center justify-center rounded text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-800 cursor-pointer text-xs"
+                >
+                  +
+                </button>
+              </div>
+
+              <span className="text-[10px] text-zinc-400 select-none">px</span>
+
+              {/* Reset to Preset Default */}
+              {onResetFrameSize && (
+                <button
+                  type="button"
+                  onClick={onResetFrameSize}
+                  data-testid="btn-reset-frame-size"
+                  title="Reset to preset default"
+                  className="ml-0.5 p-1 rounded text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-800 cursor-pointer"
+                >
+                  <RotateCcw className="w-2.5 h-2.5" />
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
 

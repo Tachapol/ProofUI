@@ -194,6 +194,7 @@ export class MockPageGenerationProvider implements PageGenerationProvider {
     } = {}
   ): Promise<PageGenerationResult> {
     const { onProgress, signal } = options;
+    const startTime = Date.now();
 
     if (signal?.aborted) {
       throw new DOMException("Generation aborted", "AbortError");
@@ -237,6 +238,16 @@ export class MockPageGenerationProvider implements PageGenerationProvider {
           ? `Addressed ${addressedTitles.length} UX finding${addressedTitles.length > 1 ? "s" : ""}: ${addressedTitles.join("; ")}`
           : `Addressed selected UX findings on document revision ${request.basedOnRevision}`;
 
+      const durationMs = Date.now() - startTime;
+      const promptTokens = Math.max(1, Math.round(request.instruction.length / 3) + 150);
+      const completionTokens = Math.max(1, Math.round(sanitized.sanitizedHtml.length / 4));
+      const usage = {
+        promptTokens,
+        completionTokens,
+        totalTokens: promptTokens + completionTokens,
+        durationMs,
+      };
+
       return {
         id: `gen_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
         requestId: request.requestId,
@@ -259,6 +270,8 @@ export class MockPageGenerationProvider implements PageGenerationProvider {
           diagnostics: sanitized.diagnostics,
         },
         createdAt: new Date().toISOString(),
+        usage,
+        durationMs,
       };
     }
 
@@ -423,6 +436,16 @@ export class MockPageGenerationProvider implements PageGenerationProvider {
 
     onProgress?.("Ready for review");
 
+    const durationMs = Date.now() - startTime;
+    const promptTokens = Math.max(1, Math.round(request.instruction.length / 3) + 200);
+    const completionTokens = Math.max(1, Math.round(sanitized.sanitizedHtml.length / 4));
+    const usage = {
+      promptTokens,
+      completionTokens,
+      totalTokens: promptTokens + completionTokens,
+      durationMs,
+    };
+
     return {
       id: `gen_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
       requestId: request.requestId,
@@ -439,6 +462,8 @@ export class MockPageGenerationProvider implements PageGenerationProvider {
         diagnostics: sanitized.diagnostics,
       },
       createdAt: new Date().toISOString(),
+      usage,
+      durationMs,
     };
   }
 }

@@ -16,6 +16,11 @@ interface ViewportCanvasProps {
   hoveredId: string | null;
   onIframeLoad?: () => void;
   editorMode?: "preview" | "design" | "code";
+  frameWidth?: number;
+  frameHeight?: number;
+  isResizing?: boolean;
+  onStartResize?: (direction: "right" | "bottom" | "corner", e: React.MouseEvent) => void;
+  onResetFrameSize?: () => void;
 }
 
 export function ViewportCanvas({
@@ -30,18 +35,25 @@ export function ViewportCanvas({
   hoveredId,
   onIframeLoad,
   editorMode = "design",
+  frameWidth,
+  frameHeight,
+  isResizing = false,
+  onStartResize,
+  onResetFrameSize,
 }: ViewportCanvasProps) {
   // Width styling based on standardized viewport presets
   const widthClasses = {
-    desktop: "w-full max-w-[1440px]",
-    tablet: "w-[768px]",
-    mobile: "w-[390px]",
+    desktop: "max-w-[1440px]",
+    tablet: "max-w-[768px]",
+    mobile: "max-w-[390px]",
   }[viewport];
 
   const presetInfo = VIEWPORT_PRESETS[viewport];
+  const activeWidth = frameWidth || presetInfo.width;
+  const activeHeight = frameHeight || presetInfo.height;
 
   return (
-    <main className="flex-1 bg-zinc-100 dark:bg-zinc-950 flex flex-col items-center justify-start p-3 md:p-5 overflow-hidden relative transition-colors">
+    <main className="flex-1 bg-zinc-100 dark:bg-zinc-950 flex flex-col justify-start p-3 md:p-5 overflow-auto relative transition-colors">
       {/* Background dot-grid pattern for editor canvas aesthetic */}
       <div
         className="absolute inset-0 pointer-events-none opacity-20 dark:opacity-30"
@@ -53,19 +65,50 @@ export function ViewportCanvas({
 
       {/* Frame Container with smooth width transition */}
       <div
-        className={`relative flex flex-col h-full ${widthClasses} transition-[width] duration-300 ease-out z-10`}
+        data-testid="viewport-frame-container"
+        className={`relative flex flex-col mx-auto ${widthClasses} ${isResizing ? "transition-none" : "transition-[width] duration-200 ease-out"} z-10 shrink-0 shadow-2xl`}
+        style={{
+          width: `${activeWidth}px`,
+          minWidth: `${activeWidth}px`,
+          height: `${activeHeight}px`,
+        }}
       >
+        {/* Floating live dimension indicator during drag resize */}
+        {isResizing && (
+          <div className="absolute -top-9 left-1/2 -translate-x-1/2 bg-zinc-900/90 text-white text-xs font-mono font-bold px-3 py-1 rounded-full shadow-lg border border-zinc-700 z-40 animate-in fade-in">
+            {activeWidth} × {activeHeight} px
+          </div>
+        )}
+
         {/* Frame Top Bar / Device Header */}
-        <div className="h-7 bg-white/90 dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-800 rounded-t-xl px-3 flex items-center justify-between text-[11px] text-zinc-500 select-none shadow-xs">
+        <div className="h-7 bg-white/90 dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-800 rounded-t-xl px-3 flex items-center justify-between text-[11px] text-zinc-500 select-none shadow-xs shrink-0">
           <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-zinc-300 dark:bg-zinc-700 inline-block" />
-            <span className="w-2.5 h-2.5 rounded-full bg-zinc-300 dark:bg-zinc-700 inline-block" />
-            <span className="w-2.5 h-2.5 rounded-full bg-zinc-300 dark:bg-zinc-700 inline-block" />
+            <span className="w-2.5 h-2.5 rounded-full bg-rose-400/80 dark:bg-rose-500/60 inline-block" />
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-400/80 dark:bg-amber-500/60 inline-block" />
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400/80 dark:bg-emerald-500/60 inline-block" />
           </div>
-          <div className="font-mono text-[10px] text-zinc-500 dark:text-zinc-400 font-medium">
-            {presetInfo.name} • {presetInfo.label}
+          <div className="font-mono text-[10px] text-zinc-500 dark:text-zinc-400 font-medium flex items-center gap-1.5">
+            <span>{presetInfo.name}</span>
+            <span>•</span>
+            <span
+              data-testid="frame-dimension-indicator"
+              className="text-zinc-800 dark:text-zinc-200 font-semibold"
+            >
+              {activeWidth} × {activeHeight} px
+            </span>
           </div>
-          <div className="w-8" />
+          <div className="flex items-center gap-1">
+            {onResetFrameSize && (
+              <button
+                type="button"
+                onClick={onResetFrameSize}
+                title="Reset to default preset size"
+                className="text-[10px] text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 px-1.5 py-0.5 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer font-sans"
+              >
+                Reset
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Frame Body with Iframe and Overlay */}
@@ -145,6 +188,36 @@ export function ViewportCanvas({
             )}
           </div>
         )}
+        </div>
+
+        {/* Resize Handle: Right (Width) */}
+        <div
+          onMouseDown={(e) => onStartResize?.("right", e)}
+          data-testid="frame-resize-handle-right"
+          title="Drag to resize width"
+          className="absolute -right-2 top-7 bottom-0 w-4 cursor-ew-resize flex items-center justify-center group z-40 select-none"
+        >
+          <div className="w-1 h-12 rounded-full bg-zinc-300 dark:bg-zinc-700 group-hover:bg-indigo-500 group-hover:w-1.5 transition-all shadow-xs" />
+        </div>
+
+        {/* Resize Handle: Bottom (Height) */}
+        <div
+          onMouseDown={(e) => onStartResize?.("bottom", e)}
+          data-testid="frame-resize-handle-bottom"
+          title="Drag to resize height"
+          className="absolute -bottom-2 left-0 right-0 h-4 cursor-ns-resize flex items-center justify-center group z-40 select-none"
+        >
+          <div className="h-1 w-12 rounded-full bg-zinc-300 dark:bg-zinc-700 group-hover:bg-indigo-500 group-hover:h-1.5 transition-all shadow-xs" />
+        </div>
+
+        {/* Resize Handle: Corner (Both) */}
+        <div
+          onMouseDown={(e) => onStartResize?.("corner", e)}
+          data-testid="frame-resize-handle-corner"
+          title="Drag to resize width & height"
+          className="absolute -bottom-2 -right-2 w-6 h-6 cursor-nwse-resize flex items-center justify-center group z-40 select-none"
+        >
+          <div className="w-2.5 h-2.5 rounded-br-sm border-r-2 border-b-2 border-zinc-400 dark:border-zinc-500 group-hover:border-indigo-500 transition-colors" />
         </div>
       </div>
     </main>

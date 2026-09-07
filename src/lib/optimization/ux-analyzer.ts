@@ -524,3 +524,5 @@ export function analyzeDocumentUX(
     documentRevision: revision,
   };
 }
+
+export const analyzeUX = analyzeDocumentUX;

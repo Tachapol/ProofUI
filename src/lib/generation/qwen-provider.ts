@@ -122,6 +122,7 @@ export class QwenPageGenerationProvider implements PageGenerationProvider {
     } = {}
   ): Promise<PageGenerationResult> {
     const { onProgress, signal } = options;
+    const startTime = Date.now();
 
     if (signal?.aborted) {
       throw new GenerationError("Generation was canceled.", "GENERATION_CANCELED");
@@ -287,6 +288,23 @@ export class QwenPageGenerationProvider implements PageGenerationProvider {
 
       onProgress?.("Ready for review");
 
+      const durationMs = Date.now() - startTime;
+      const usage = completion.usage
+        ? {
+            promptTokens: completion.usage.prompt_tokens ?? 0,
+            completionTokens: completion.usage.completion_tokens ?? 0,
+            totalTokens: completion.usage.total_tokens ?? 0,
+            durationMs,
+          }
+        : {
+            promptTokens: Math.max(1, Math.round(request.instruction.length / 3) + 250),
+            completionTokens: Math.max(1, Math.round(sanitized.sanitizedHtml.length / 4)),
+            totalTokens:
+              Math.max(1, Math.round(request.instruction.length / 3) + 250) +
+              Math.max(1, Math.round(sanitized.sanitizedHtml.length / 4)),
+            durationMs,
+          };
+
       return {
         id: `gen_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
         requestId: request.requestId,
@@ -305,6 +323,8 @@ export class QwenPageGenerationProvider implements PageGenerationProvider {
         providerName: "qwen",
         modelName: this.config.model,
         createdAt: new Date().toISOString(),
+        usage,
+        durationMs,
       };
     } catch (err) {
       throw mapApiError(err);

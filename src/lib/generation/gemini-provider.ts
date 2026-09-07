@@ -154,6 +154,7 @@ export class GeminiPageGenerationProvider implements PageGenerationProvider {
     options: { signal?: AbortSignal; onProgress?: (stage: string) => void } = {}
   ): Promise<PageGenerationResult> {
     const { signal, onProgress } = options;
+    const startTime = Date.now();
     if (signal?.aborted) throw new GenerationError("Generation was canceled.", "GENERATION_CANCELED");
 
     try {
@@ -220,6 +221,17 @@ export class GeminiPageGenerationProvider implements PageGenerationProvider {
 
       onProgress?.("Preparing preview");
       onProgress?.("Ready for review");
+
+      const durationMs = Date.now() - startTime;
+      const usage = {
+        promptTokens: Math.max(1, Math.round(request.instruction.length / 3) + 300),
+        completionTokens: Math.max(1, Math.round(sanitized.sanitizedHtml.length / 4)),
+        totalTokens:
+          Math.max(1, Math.round(request.instruction.length / 3) + 300) +
+          Math.max(1, Math.round(sanitized.sanitizedHtml.length / 4)),
+        durationMs,
+      };
+
       return {
         id: `gen_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
         requestId: request.requestId,
@@ -235,6 +247,8 @@ export class GeminiPageGenerationProvider implements PageGenerationProvider {
         providerName: "gemini",
         modelName: this.config.model,
         createdAt: new Date().toISOString(),
+        usage,
+        durationMs,
       };
     } catch (error) {
       throw mapGeminiError(error);

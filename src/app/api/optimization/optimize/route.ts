@@ -11,6 +11,8 @@ import { createGenerationProvider } from "@/lib/generation/provider-factory";
 import { MockPageGenerationProvider } from "@/lib/generation/mock-provider";
 import { sanitizeGeneratedHtml } from "@/lib/generation/sanitizer";
 import { GenerationError } from "@/lib/generation/qwen-provider";
+import { analyzeUX } from "@/lib/optimization/ux-analyzer";
+import { computeOptimizationComparison } from "@/lib/optimization/comparator";
 
 export async function POST(req: NextRequest) {
   try {
@@ -66,11 +68,23 @@ export async function POST(req: NextRequest) {
       const sanitized = sanitizeGeneratedHtml(result.html);
       const summary = buildOptimizationCandidateSummary(optimizationRequest.selectedFindings);
 
+      const baselineAnalysis = analyzeUX(optimizationRequest.html, {
+        viewport: optimizationRequest.viewport,
+        revision: optimizationRequest.revision,
+      });
+      const candidateAnalysis = analyzeUX(sanitized.sanitizedHtml, {
+        viewport: optimizationRequest.viewport,
+        revision: optimizationRequest.revision,
+      });
+      const comparison = computeOptimizationComparison(baselineAnalysis, candidateAnalysis);
+
       return NextResponse.json({
         result: {
           ...result,
           summary,
           html: sanitized.sanitizedHtml,
+          comparison,
+          optimizationComparison: comparison,
           validation: {
             valid: sanitized.isValid,
             diagnostics: sanitized.diagnostics,
@@ -147,10 +161,28 @@ export async function POST(req: NextRequest) {
             optimizationRequest.selectedFindings
           );
 
+          sendEvent({
+            type: "status",
+            stage: "Comparing evidence",
+            message: "Comparing deterministic UX evidence against baseline...",
+          });
+
+          const baselineAnalysis = analyzeUX(optimizationRequest.html, {
+            viewport: optimizationRequest.viewport,
+            revision: optimizationRequest.revision,
+          });
+          const candidateAnalysis = analyzeUX(sanitized.sanitizedHtml, {
+            viewport: optimizationRequest.viewport,
+            revision: optimizationRequest.revision,
+          });
+          const comparison = computeOptimizationComparison(baselineAnalysis, candidateAnalysis);
+
           const finalResult = {
             ...rawResult,
             summary: candidateSummary,
             html: sanitized.sanitizedHtml,
+            comparison,
+            optimizationComparison: comparison,
             validation: {
               valid: sanitized.isValid,
               diagnostics: sanitized.diagnostics,

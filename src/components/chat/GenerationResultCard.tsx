@@ -10,8 +10,10 @@ import {
   Clock,
   Trash2,
   ArrowRightLeft,
+  Zap,
 } from "lucide-react";
 import { GenerationCandidate } from "@/lib/generation/schemas";
+import { formatHtml } from "@/lib/code/html-format";
 
 interface GenerationResultCardProps {
   candidate: GenerationCandidate;
@@ -46,10 +48,18 @@ export function GenerationResultCard({
     minute: "2-digit",
   });
 
+  const usage = candidate.usage || candidate.result.usage;
+  const durationMs = candidate.durationMs || candidate.result.durationMs || usage?.durationMs;
+  const durationText = durationMs
+    ? durationMs < 1000
+      ? `${durationMs}ms`
+      : `${(durationMs / 1000).toFixed(1)}s`
+    : null;
+
   const handleCopyCode = async (e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      await navigator.clipboard.writeText(candidate.sanitizedHtml);
+      await navigator.clipboard.writeText(formatHtml(candidate.sanitizedHtml));
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -59,7 +69,7 @@ export function GenerationResultCard({
 
   // Syntax highlighting simulation for code view
   const formattedCodeLines = useMemo(() => {
-    const raw = candidate.sanitizedHtml.trim();
+    const raw = formatHtml(candidate.sanitizedHtml).trim();
     return raw.split("\n").slice(0, 45); // First 45 lines formatted
   }, [candidate.sanitizedHtml]);
 
@@ -138,6 +148,21 @@ export function GenerationResultCard({
             >
               <Play className="w-3.5 h-3.5 fill-current" />
             </button>
+
+            {candidate.optimizationComparison && (
+              <span
+                data-testid="result-card-ux-score-delta"
+                className={`px-2 py-0.5 rounded text-[11px] font-semibold ${
+                  candidate.optimizationComparison.scoreDelta > 0
+                    ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
+                    : "bg-zinc-800 text-zinc-400 border border-zinc-700"
+                }`}
+              >
+                {candidate.optimizationComparison.scoreDelta > 0
+                  ? `UX score: ${candidate.optimizationComparison.baselineScore} → ${candidate.optimizationComparison.candidateScore} (+${candidate.optimizationComparison.scoreDelta})`
+                  : `UX score: ${candidate.optimizationComparison.baselineScore} → ${candidate.optimizationComparison.candidateScore} (${candidate.optimizationComparison.scoreDelta})`}
+              </span>
+            )}
           </div>
 
           {/* Right Actions: Copy + [Preview | Code] Segmented Toggle */}
@@ -262,12 +287,40 @@ export function GenerationResultCard({
       </div>
 
       {/* Footer Info Line beneath card */}
-      <div className="flex items-center justify-between px-1 text-[11px] text-zinc-500 select-none">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between px-1 text-[11px] text-zinc-500 select-none flex-wrap gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Clock className="w-3 h-3" />
           <span>{createdTime}</span>
           <span>•</span>
           <span className="font-mono text-zinc-400">{providerLabel}</span>
+          {usage && (
+            <>
+              <span>•</span>
+              <div
+                data-testid="generation-token-metrics"
+                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-[10px] font-mono text-zinc-300"
+              >
+                <span>
+                  <span className="text-zinc-500">Token In:</span>{" "}
+                  <strong className="text-zinc-200">{usage.promptTokens.toLocaleString()}</strong>
+                </span>
+                <span className="text-zinc-700">|</span>
+                <span>
+                  <span className="text-zinc-500">Token Out:</span>{" "}
+                  <strong className="text-zinc-200">{usage.completionTokens.toLocaleString()}</strong>
+                </span>
+                {durationText && (
+                  <>
+                    <span className="text-zinc-700">|</span>
+                    <span className="text-emerald-400 flex items-center gap-0.5">
+                      <Zap className="w-2.5 h-2.5" />
+                      {durationText}
+                    </span>
+                  </>
+                )}
+              </div>
+            </>
+          )}
         </div>
 
         <div className="flex items-center gap-2 text-zinc-500">

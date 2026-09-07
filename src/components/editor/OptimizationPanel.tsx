@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import {
   Sparkles,
   AlertCircle,
@@ -10,6 +10,13 @@ import {
   Tablet,
   Smartphone,
   Clock,
+  TrendingUp,
+  Minus,
+  AlertTriangle,
+  ShieldAlert,
+  Check,
+  X,
+  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,8 +30,9 @@ import {
   UXCategory,
   isFindingAutomatable,
   UXOptimizationStage,
+  OptimizationComparison,
 } from "@/lib/optimization/schemas";
-import { PageGenerationResult } from "@/lib/generation/schemas";
+import { PageGenerationResult, GenerationCandidate } from "@/lib/generation/schemas";
 
 interface OptimizationPanelProps {
   canonicalHtml: string;
@@ -36,6 +44,9 @@ interface OptimizationPanelProps {
   analysis?: UXAnalysisResult | null;
   onAnalysisChange?: (analysis: UXAnalysisResult | null) => void;
   onOptimizationResultReady?: (result: PageGenerationResult) => void;
+  candidate?: GenerationCandidate | null;
+  onApplyCandidate?: (candidate: GenerationCandidate) => void;
+  onRejectCandidate?: (candidate: GenerationCandidate) => void;
 }
 
 export function OptimizationPanel({
@@ -48,7 +59,19 @@ export function OptimizationPanel({
   analysis: analysisProp,
   onAnalysisChange,
   onOptimizationResultReady,
+  candidate,
+  onApplyCandidate,
+  onRejectCandidate,
 }: OptimizationPanelProps) {
+  const comparison: OptimizationComparison | undefined = useMemo(() => {
+    if (!candidate) return undefined;
+    return (
+      candidate.optimizationComparison ||
+      (candidate.result as { optimizationComparison?: OptimizationComparison; comparison?: OptimizationComparison })?.optimizationComparison ||
+      (candidate.result as { optimizationComparison?: OptimizationComparison; comparison?: OptimizationComparison })?.comparison
+    );
+  }, [candidate]);
+
   const [internalAnalysis, setInternalAnalysis] = useState<UXAnalysisResult | null>(null);
   const analysis = analysisProp !== undefined ? analysisProp : internalAnalysis;
   const setAnalysis = useCallback(
@@ -164,6 +187,18 @@ export function OptimizationPanel({
   const [userGoal, setUserGoal] = useState<string>("");
   const [isOptimizing, setIsOptimizing] = useState<boolean>(false);
   const [optimizingStage, setOptimizingStage] = useState<UXOptimizationStage | null>(null);
+  const [optimizingElapsed, setOptimizingElapsed] = useState<number>(0);
+
+  useEffect(() => {
+    if (!isOptimizing) return;
+    const start = Date.now();
+    const interval = setInterval(() => {
+      setOptimizingElapsed(Math.max(0, (Date.now() - start) / 1000));
+    }, 100);
+    return () => {
+      clearInterval(interval);
+    };
+  }, [isOptimizing]);
 
   const automatableFindings = useMemo(() => {
     if (!analysis) return [];
@@ -392,15 +427,353 @@ export function OptimizationPanel({
                   Document modified (rev #{analysis?.documentRevision} → #{currentRevision}).
                   Run analysis again to update findings.
                 </p>
+                <Button
+                  type="button"
+                  size="sm"
+                  data-testid="btn-reanalyze-after-apply"
+                  onClick={handleAnalyze}
+                  disabled={isAnalyzing}
+                  className="mt-2 text-xs h-7 bg-amber-600 hover:bg-amber-700 text-white flex items-center gap-1.5 shadow-xs"
+                >
+                  <RefreshCw className={`w-3 h-3 ${isAnalyzing ? "animate-spin" : ""}`} />
+                  <span>Analyze UX again</span>
+                </Button>
               </div>
+            </div>
+          )}
+
+          {/* Before/After Evidence Comparison Card */}
+          {comparison && (
+            <div
+              data-testid="optimization-comparison-card"
+              className="p-3.5 rounded-xl bg-indigo-50/50 dark:bg-indigo-950/20 border-2 border-indigo-500/30 dark:border-indigo-500/30 space-y-3"
+            >
+              {/* Header & Score Delta */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                    Evidence Comparison
+                  </span>
+                </div>
+                <Badge
+                  variant={comparison.hasMeasurableImprovement ? "success" : "secondary"}
+                  className="text-[10px]"
+                >
+                  {comparison.hasMeasurableImprovement ? "Improvement" : "No Score Gain"}
+                </Badge>
+              </div>
+
+              {/* Score Display */}
+              <div className="p-2.5 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-500">
+                    UX Score Comparison
+                  </span>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span
+                      data-testid="comparison-score-delta"
+                      className="text-sm font-extrabold text-zinc-900 dark:text-zinc-100"
+                    >
+                      UX score: {comparison.baselineScore} → {comparison.candidateScore}{" "}
+                      ({comparison.scoreDelta >= 0 ? `+${comparison.scoreDelta}` : comparison.scoreDelta})
+                    </span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  {comparison.hasMeasurableImprovement ? (
+                    <span className="flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                      <TrendingUp className="w-3.5 h-3.5" />
+                      +{comparison.scoreDelta}
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-xs font-bold text-zinc-500">
+                      <Minus className="w-3.5 h-3.5" />
+                      {comparison.scoreDelta}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Token Usage & Generation Duration */}
+              {candidate?.usage && (
+                <div
+                  data-testid="optimization-token-usage"
+                  className="px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center justify-between text-[10px] font-mono text-zinc-500"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span>In: <strong className="text-zinc-700 dark:text-zinc-300">{candidate.usage.promptTokens.toLocaleString()}</strong></span>
+                    <span>•</span>
+                    <span>Out: <strong className="text-zinc-700 dark:text-zinc-300">{candidate.usage.completionTokens.toLocaleString()}</strong></span>
+                  </div>
+                  {candidate.durationMs && (
+                    <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-0.5">
+                      <Zap className="w-2.5 h-2.5" />
+                      {(candidate.durationMs / 1000).toFixed(1)}s
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* No Measurable Improvement Alert */}
+              {!comparison.hasMeasurableImprovement && (
+                <div
+                  data-testid="comparison-no-improvement-alert"
+                  className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 text-xs flex items-center gap-2"
+                >
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-amber-500" />
+                  <span className="font-medium">No measurable improvement</span>
+                </div>
+              )}
+
+              {/* New Critical Issues Alert */}
+              {comparison.hasNewCriticalIssues && (
+                <div
+                  data-testid="comparison-new-critical-alert"
+                  className="p-2.5 rounded-lg bg-rose-500/10 border-2 border-rose-500/40 text-rose-600 dark:text-rose-400 text-xs flex items-start gap-2"
+                >
+                  <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5 text-rose-600 dark:text-rose-400" />
+                  <div>
+                    <p className="font-bold">⚠️ New Critical Issues Detected</p>
+                    <p className="text-[11px] opacity-90 mt-0.5">
+                      The candidate introduces critical issues not in baseline.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Comparison Breakdown Sections */}
+              <div className="space-y-2 text-xs">
+                {/* 1. Resolved Issues */}
+                <div
+                  data-testid="comparison-resolved-section"
+                  className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-2.5 space-y-2"
+                >
+                  <div className="flex items-center justify-between font-semibold text-emerald-700 dark:text-emerald-400">
+                    <div className="flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>Resolved Issues ({comparison.resolvedFindings.length})</span>
+                    </div>
+                  </div>
+                  {comparison.resolvedFindings.length === 0 ? (
+                    <p className="text-[11px] text-zinc-500 italic">None resolved</p>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {comparison.resolvedFindings.map((finding) => (
+                        <div
+                          key={`res-${finding.id}`}
+                          className="p-2 rounded bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-[11px] space-y-1 cursor-pointer hover:border-emerald-400/50 transition-colors"
+                          onClick={() => {
+                            if (finding.affectedNodeIds.length > 0) {
+                              onSelectNode(finding.affectedNodeIds[0]);
+                            }
+                          }}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                              {finding.title}
+                            </span>
+                            <span className="text-[9px] uppercase font-bold text-emerald-600 bg-emerald-500/10 px-1 py-0.5 rounded">
+                              Resolved
+                            </span>
+                          </div>
+                          {finding.affectedNodeIds.length > 0 && (
+                            <div className="flex items-center gap-1 flex-wrap pt-0.5" onClick={(e) => e.stopPropagation()}>
+                              <span className="text-[10px] text-zinc-400">Node:</span>
+                              {finding.affectedNodeIds.map((nodeId) => (
+                                <button
+                                  key={nodeId}
+                                  type="button"
+                                  data-testid={`comparison-node-${nodeId}`}
+                                  onClick={() => onSelectNode(nodeId)}
+                                  className="px-1.5 py-0.2 rounded text-[10px] font-mono border bg-zinc-50 dark:bg-zinc-800 hover:border-indigo-400 cursor-pointer"
+                                >
+                                  #{nodeId}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. Remaining Issues */}
+                <div
+                  data-testid="comparison-remaining-section"
+                  className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 p-2.5 space-y-2"
+                >
+                  <div className="flex items-center justify-between font-semibold text-zinc-700 dark:text-zinc-300">
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-zinc-500" />
+                      <span>Remaining Issues ({comparison.remainingFindings.length})</span>
+                    </div>
+                  </div>
+                  {comparison.remainingFindings.length === 0 ? (
+                    <p className="text-[11px] text-zinc-500 italic">No remaining issues</p>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {comparison.remainingFindings.map((finding) => (
+                        <div
+                          key={`rem-${finding.id}`}
+                          className="p-2 rounded bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-[11px] space-y-1 cursor-pointer hover:border-zinc-400 transition-colors"
+                          onClick={() => {
+                            if (finding.affectedNodeIds.length > 0) {
+                              onSelectNode(finding.affectedNodeIds[0]);
+                            }
+                          }}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                              {finding.title}
+                            </span>
+                            <span className="text-[9px] uppercase font-bold text-zinc-500 bg-zinc-200/60 dark:bg-zinc-800 px-1 py-0.5 rounded">
+                              {finding.severity}
+                            </span>
+                          </div>
+                          {finding.affectedNodeIds.length > 0 && (
+                            <div className="flex items-center gap-1 flex-wrap pt-0.5" onClick={(e) => e.stopPropagation()}>
+                              <span className="text-[10px] text-zinc-400">Node:</span>
+                              {finding.affectedNodeIds.map((nodeId) => (
+                                <button
+                                  key={nodeId}
+                                  type="button"
+                                  data-testid={`comparison-node-${nodeId}`}
+                                  onClick={() => onSelectNode(nodeId)}
+                                  className="px-1.5 py-0.2 rounded text-[10px] font-mono border bg-zinc-50 dark:bg-zinc-800 hover:border-indigo-400 cursor-pointer"
+                                >
+                                  #{nodeId}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* 3. New Issues */}
+                <div
+                  data-testid="comparison-new-section"
+                  className={`rounded-lg border p-2.5 space-y-2 ${
+                    comparison.newFindings.length > 0
+                      ? "border-rose-500/30 bg-rose-500/5 text-rose-700 dark:text-rose-400"
+                      : "border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 text-zinc-700 dark:text-zinc-300"
+                  }`}
+                >
+                  <div className="flex items-center justify-between font-semibold">
+                    <div className="flex items-center gap-1.5">
+                      <AlertCircle className="w-3.5 h-3.5" />
+                      <span>New Issues ({comparison.newFindings.length})</span>
+                    </div>
+                  </div>
+                  {comparison.newFindings.length === 0 ? (
+                    <p className="text-[11px] text-zinc-500 italic">No new issues introduced</p>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {comparison.newFindings.map((finding) => (
+                        <div
+                          key={`new-${finding.id}`}
+                          className="p-2 rounded bg-white dark:bg-zinc-900 border border-rose-200 dark:border-rose-900/50 text-[11px] space-y-1 cursor-pointer hover:border-rose-400 transition-colors"
+                          onClick={() => {
+                            if (finding.affectedNodeIds.length > 0) {
+                              onSelectNode(finding.affectedNodeIds[0]);
+                            }
+                          }}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                              {finding.title}
+                            </span>
+                            <span
+                              className={`text-[9px] uppercase font-bold px-1 py-0.5 rounded ${
+                                finding.severity === "critical"
+                                  ? "bg-rose-500/20 text-rose-600 dark:text-rose-400 font-extrabold"
+                                  : "bg-amber-500/20 text-amber-600 dark:text-amber-400"
+                              }`}
+                            >
+                              {finding.severity}
+                            </span>
+                          </div>
+                          {finding.evidence && (
+                            <p className="text-[10px] text-zinc-500 font-mono break-all leading-tight">{finding.evidence}</p>
+                          )}
+                          {finding.affectedNodeIds.length > 0 && (
+                            <div className="flex items-center gap-1 flex-wrap pt-0.5" onClick={(e) => e.stopPropagation()}>
+                              <span className="text-[10px] text-zinc-400">Node:</span>
+                              {finding.affectedNodeIds.map((nodeId) => (
+                                <button
+                                  key={nodeId}
+                                  type="button"
+                                  data-testid={`comparison-node-${nodeId}`}
+                                  onClick={() => onSelectNode(nodeId)}
+                                  className="px-1.5 py-0.2 rounded text-[10px] font-mono border bg-zinc-50 dark:bg-zinc-800 hover:border-indigo-400 cursor-pointer"
+                                >
+                                  #{nodeId}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Candidate Action Buttons */}
+              {candidate && (
+                <div className="flex items-center gap-2 pt-1">
+                  <Button
+                    type="button"
+                    size="sm"
+                    data-testid="btn-apply-comparison"
+                    disabled={candidate.status === "stale"}
+                    onClick={() => onApplyCandidate?.(candidate)}
+                    className="flex-1 text-xs h-8 bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
+                  >
+                    <Check className="w-3.5 h-3.5 mr-1" />
+                    <span>Apply Candidate</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    data-testid="btn-reject-comparison"
+                    onClick={() => onRejectCandidate?.(candidate)}
+                    className="text-xs h-8 text-zinc-600 dark:text-zinc-400"
+                  >
+                    <X className="w-3.5 h-3.5 mr-1" />
+                    <span>Reject</span>
+                  </Button>
+                </div>
+              )}
             </div>
           )}
 
           {/* Error message */}
           {errorMessage && (
-            <div className="p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs flex items-start gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              <span>{errorMessage}</span>
+            <div
+              data-testid="optimization-error-card"
+              className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs flex items-start gap-2.5 shadow-xs"
+            >
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600 dark:text-rose-400" />
+              <div className="flex-1 space-y-1">
+                <p className="font-bold text-rose-700 dark:text-rose-300">Operation Failed</p>
+                <p className="text-[11px] leading-relaxed text-zinc-700 dark:text-zinc-300">
+                  {errorMessage}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setErrorMessage(null)}
+                className="text-rose-400 hover:text-rose-600 p-0.5 cursor-pointer"
+                title="Dismiss error"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
             </div>
           )}
 
@@ -599,7 +972,15 @@ export function OptimizationPanel({
                         <RefreshCw className="w-3 h-3 animate-spin" />
                         <span>Generating candidate...</span>
                       </span>
-                      <span className="text-[10px] uppercase font-mono">{optimizingStage}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] uppercase font-mono">{optimizingStage}</span>
+                        <span
+                          data-testid="optimization-live-timer"
+                          className="font-mono text-[10px] tabular-nums bg-indigo-500/20 px-1.5 py-0.5 rounded border border-indigo-500/30"
+                        >
+                          {optimizingElapsed.toFixed(1)}s
+                        </span>
+                      </div>
                     </div>
                     <div className="w-full h-1 bg-indigo-200 dark:bg-indigo-950 rounded-full overflow-hidden">
                       <div className="h-full bg-indigo-600 animate-pulse rounded-full w-3/4" />

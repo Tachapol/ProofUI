@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Editor, { OnMount } from "@monaco-editor/react";
 import { Check, AlertCircle, AlertTriangle, Play, RefreshCw } from "lucide-react";
 import { CodeDiagnostic, CodeDraftState } from "@/lib/code/diagnostics";
 import { validateHtmlSource } from "@/lib/code/code-validation";
+import { formatHtml } from "@/lib/code/html-format";
 import { Button } from "@/components/ui/button";
 
 interface CodeEditorPanelProps {
@@ -22,20 +23,24 @@ export function CodeEditorPanel({
   onDraftChange,
   theme = "dark",
 }: CodeEditorPanelProps) {
+  const formattedCanonicalSource = useMemo(
+    () => formatHtml(canonicalSource),
+    [canonicalSource]
+  );
   const [draftState, setDraftState] = useState<CodeDraftState>({
-    value: canonicalSource,
+    value: formattedCanonicalSource,
     status: "clean",
     diagnostics: [],
     basedOnRevision: revision,
   });
 
-  const [prevRevision, setPrevRevision] = useState(revision);
-  if (prevRevision !== revision) {
-    setPrevRevision(revision);
+  const [previousRevision, setPreviousRevision] = useState(revision);
+  if (previousRevision !== revision) {
+    setPreviousRevision(revision);
     if (draftState.status === "clean") {
-      setDraftState((prev) => ({
-        ...prev,
-        value: canonicalSource,
+      setDraftState((previous) => ({
+        ...previous,
+        value: formattedCanonicalSource,
         basedOnRevision: revision,
       }));
     }
@@ -49,9 +54,9 @@ export function CodeEditorPanel({
 
   // Notify parent of unapplied changes status
   useEffect(() => {
-    const hasUnapplied = draftState.status !== "clean" && draftState.value !== canonicalSource;
+    const hasUnapplied = draftState.status !== "clean" && draftState.value !== formattedCanonicalSource;
     onDraftChange?.(hasUnapplied);
-  }, [draftState.status, draftState.value, canonicalSource, onDraftChange]);
+  }, [draftState.status, draftState.value, formattedCanonicalSource, onDraftChange]);
 
   // Validation function
   const runValidation = useCallback((code: string) => {
@@ -120,17 +125,23 @@ export function CodeEditorPanel({
 
   const handleResetDraft = () => {
     setDraftState({
-      value: canonicalSource,
+      value: formattedCanonicalSource,
       status: "clean",
       diagnostics: [],
       basedOnRevision: revision,
     });
-    runValidation(canonicalSource);
+    runValidation(formattedCanonicalSource);
   };
 
   const hasErrors = draftState.diagnostics.some((d) => d.severity === "error");
-  const canApply = draftState.status === "valid" && draftState.value !== canonicalSource && !hasErrors;
+  const canApply = draftState.status === "valid" && draftState.value !== formattedCanonicalSource && !hasErrors;
   const isStale = draftState.basedOnRevision < revision;
+
+  const handleFormatDraft = () => {
+    const formatted = formatHtml(draftState.value);
+    setDraftState((previous) => ({ ...previous, value: formatted, status: "validating" }));
+    runValidation(formatted);
+  };
 
   return (
     <div className="flex-1 flex flex-col h-full bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 overflow-hidden transition-colors" data-testid="code-editor-panel">
@@ -167,7 +178,7 @@ export function CodeEditorPanel({
         </div>
 
         <div className="flex items-center gap-2">
-          {draftState.value !== canonicalSource && (
+          {draftState.value !== formattedCanonicalSource && (
             <Button
               variant="ghost"
               size="sm"
@@ -176,6 +187,10 @@ export function CodeEditorPanel({
               Reset Draft
             </Button>
           )}
+
+          <Button variant="ghost" size="sm" onClick={handleFormatDraft} data-testid="btn-format-code">
+            Format HTML
+          </Button>
 
           <Button
             variant="default"

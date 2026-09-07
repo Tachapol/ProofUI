@@ -58,6 +58,7 @@ export const ChatContentBlockSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("warning"),
     message: z.string(),
+    code: z.string().optional(),
   }),
 ]);
 export type ChatContentBlock = z.infer<typeof ChatContentBlockSchema>;

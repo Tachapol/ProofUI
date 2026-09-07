@@ -32,6 +32,22 @@ export function GenerationPreviewBanner({
         <span className="font-semibold text-foreground">
           {isComparingOriginal ? "Comparing: Current Document" : "Generated Preview (Uncommitted)"}
         </span>
+        {candidate.optimizationComparison && (
+          <span
+            data-testid="banner-ux-score-delta"
+            className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${
+              candidate.optimizationComparison.scoreDelta > 0
+                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                : "bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border border-zinc-500/20"
+            }`}
+          >
+            {candidate.optimizationComparison.scoreDelta > 0
+              ? `UX score: ${candidate.optimizationComparison.baselineScore} → ${candidate.optimizationComparison.candidateScore} (+${candidate.optimizationComparison.scoreDelta})`
+              : candidate.optimizationComparison.scoreDelta === 0
+              ? `UX score: ${candidate.optimizationComparison.baselineScore} (±0)`
+              : `UX score: ${candidate.optimizationComparison.baselineScore} → ${candidate.optimizationComparison.candidateScore} (${candidate.optimizationComparison.scoreDelta})`}
+          </span>
+        )}
       </div>
 
       <div className="h-4 w-px bg-border" />

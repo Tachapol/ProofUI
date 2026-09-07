@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Loader2,
   Clock,
@@ -10,10 +10,41 @@ import {
   Trash2,
   ArrowRight,
   FileCheck,
+  AlertTriangle,
 } from "lucide-react";
 import { ChatMessage } from "@/lib/chat/schemas";
 import { GenerationCandidate } from "@/lib/generation/schemas";
 import { GenerationResultCard } from "./GenerationResultCard";
+
+function LiveProgressCard({ stage, createdAt }: { stage: string; createdAt: string }) {
+  const [elapsed, setElapsed] = useState<number>(0);
+
+  useEffect(() => {
+    const start = new Date(createdAt).getTime() || Date.now();
+    const interval = setInterval(() => {
+      setElapsed(Math.max(0, (Date.now() - start) / 1000));
+    }, 100);
+    return () => clearInterval(interval);
+  }, [createdAt]);
+
+  return (
+    <div
+      data-testid="chat-progress-card"
+      className="flex items-center justify-between gap-3 py-2 px-3.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 text-xs my-1 shadow-md w-full max-w-[320px]"
+    >
+      <div className="flex items-center gap-2">
+        <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-400" />
+        <span className="font-medium text-zinc-200">{stage}</span>
+      </div>
+      <span
+        data-testid="live-generation-timer"
+        className="font-mono text-[11px] text-blue-400 tabular-nums bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20"
+      >
+        {elapsed.toFixed(1)}s
+      </span>
+    </div>
+  );
+}
 
 interface ChatMessageItemProps {
   message: ChatMessage;
@@ -160,16 +191,43 @@ export function ChatMessageItem({
           );
         }
 
-        // Progress stage
+        // Progress stage with live timer
         if (block.type === "progress") {
+          return (
+            <LiveProgressCard
+              key={idx}
+              stage={block.stage}
+              createdAt={message.createdAt}
+            />
+          );
+        }
+
+        // Warning / Error block
+        if (block.type === "warning") {
           return (
             <div
               key={idx}
-              data-testid="chat-progress-card"
-              className="flex items-center gap-2.5 py-2 px-3.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 text-xs my-1"
+              data-testid="chat-error-card"
+              className="w-full my-2 rounded-2xl border border-rose-500/40 bg-rose-950/30 p-3.5 space-y-2 text-rose-200 text-xs shadow-lg"
             >
-              <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-400" />
-              <span>{block.stage}</span>
+              <div className="flex items-start gap-2.5">
+                <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400 mt-0.5" />
+                <div className="flex-1 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-rose-300 text-xs">
+                      {message.status === "canceled" ? "Request Canceled" : "Generation Failed"}
+                    </span>
+                    {block.code && (
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                        {block.code}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-zinc-300 text-[11px] leading-relaxed">
+                    {block.message}
+                  </p>
+                </div>
+              </div>
             </div>
           );
         }
