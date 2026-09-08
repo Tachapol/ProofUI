@@ -17,6 +17,13 @@ import {
   Check,
   X,
   Zap,
+  MousePointer2,
+  ArrowDown,
+  FormInput,
+  Eye,
+  ChevronDown,
+  ChevronUp,
+  Globe,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,9 +40,13 @@ import {
   OptimizationComparison,
 } from "@/lib/optimization/schemas";
 import { PageGenerationResult, GenerationCandidate } from "@/lib/generation/schemas";
+import { InteractionSessionSummary } from "@/lib/interaction/schemas";
+import { AggregatedProductionEvidence } from "@/lib/production/schemas";
+import { ProductionEvidenceDashboard } from "./ProductionEvidenceDashboard";
 
 interface OptimizationPanelProps {
   canonicalHtml: string;
+  projectId?: string;
   currentRevision: number;
   selectedId: string | null;
   onSelectNode: (nodeId: string | null) => void;
@@ -47,10 +58,12 @@ interface OptimizationPanelProps {
   candidate?: GenerationCandidate | null;
   onApplyCandidate?: (candidate: GenerationCandidate) => void;
   onRejectCandidate?: (candidate: GenerationCandidate) => void;
+  interactionSummary?: InteractionSessionSummary | null;
 }
 
 export function OptimizationPanel({
   canonicalHtml,
+  projectId = "proj_default",
   currentRevision,
   selectedId,
   onSelectNode,
@@ -62,6 +75,7 @@ export function OptimizationPanel({
   candidate,
   onApplyCandidate,
   onRejectCandidate,
+  interactionSummary,
 }: OptimizationPanelProps) {
   const comparison: OptimizationComparison | undefined = useMemo(() => {
     if (!candidate) return undefined;
@@ -88,6 +102,7 @@ export function OptimizationPanel({
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [currentStage, setCurrentStage] = useState<UXAnalyzeStage | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [evidenceMode, setEvidenceMode] = useState<"preview" | "production">("preview");
 
   // Filters
   const [selectedSeverity, setSelectedSeverity] = useState<UXSeverity | "all">(
@@ -104,8 +119,11 @@ export function OptimizationPanel({
     }
   };
 
+  // Selected findings for AI Optimization Candidate
+  const [selectedFindingIds, setSelectedFindingIds] = useState<Set<string>>(new Set());
+
   // Run UX Analysis with SSE
-  const handleAnalyze = useCallback(async () => {
+  const handleAnalyze = useCallback(async (liveEvidenceToUse?: AggregatedProductionEvidence | null) => {
     setIsAnalyzing(true);
     setCurrentStage("Preparing document");
     setErrorMessage(null);
@@ -121,6 +139,7 @@ export function OptimizationPanel({
           html: canonicalHtml,
           viewport: selectedViewport,
           revision: currentRevision,
+          liveEvidence: liveEvidenceToUse || undefined,
         }),
       });
 
@@ -156,6 +175,12 @@ export function OptimizationPanel({
               setCurrentStage(event.stage);
             } else if (event.type === "result") {
               setAnalysis(event.result);
+              if (liveEvidenceToUse) {
+                const liveFindings = event.result.findings.filter((f) => f.category === "conversion");
+                if (liveFindings.length > 0) {
+                  setSelectedFindingIds(new Set(liveFindings.map((f) => f.id)));
+                }
+              }
             } else if (event.type === "error") {
               setErrorMessage(event.error);
             }
@@ -172,7 +197,14 @@ export function OptimizationPanel({
       setIsAnalyzing(false);
       setCurrentStage(null);
     }
-  }, [canonicalHtml, selectedViewport, currentRevision, setAnalysis]);
+  }, [canonicalHtml, selectedViewport, currentRevision, setAnalysis, setSelectedFindingIds]);
+
+  const handleCreateOptimizationFromLiveEvidence = useCallback(
+    async (evidence: AggregatedProductionEvidence) => {
+      await handleAnalyze(evidence);
+    },
+    [handleAnalyze]
+  );
 
   // Is analysis stale?
   const isStale = useMemo(() => {
@@ -182,8 +214,6 @@ export function OptimizationPanel({
     );
   }, [analysis, currentRevision]);
 
-  // Selected findings for AI Optimization Candidate
-  const [selectedFindingIds, setSelectedFindingIds] = useState<Set<string>>(new Set());
   const [userGoal, setUserGoal] = useState<string>("");
   const [isOptimizing, setIsOptimizing] = useState<boolean>(false);
   const [optimizingStage, setOptimizingStage] = useState<UXOptimizationStage | null>(null);
@@ -212,7 +242,7 @@ export function OptimizationPanel({
     );
   }, [analysis, selectedFindingIds]);
 
-  const toggleFindingSelection = useCallback((id: string) => {
+  const toggleFindingSelection = (id: string) => {
     setSelectedFindingIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) {
@@ -222,15 +252,15 @@ export function OptimizationPanel({
       }
       return next;
     });
-  }, []);
+  };
 
-  const handleSelectAllFindings = useCallback(() => {
+  const handleSelectAllFindings = () => {
     if (selectedFindingIds.size === automatableFindings.length && automatableFindings.length > 0) {
       setSelectedFindingIds(new Set());
     } else {
       setSelectedFindingIds(new Set(automatableFindings.map((f) => f.id)));
     }
-  }, [selectedFindingIds.size, automatableFindings]);
+  };
 
   const handleGenerateCandidate = useCallback(async () => {
     if (!analysis || selectedFindingIds.size === 0 || isOptimizing) return;
@@ -394,7 +424,7 @@ export function OptimizationPanel({
           <div>
             <Button
               className="w-full gap-2 font-medium bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs"
-              onClick={handleAnalyze}
+              onClick={() => handleAnalyze()}
               disabled={isAnalyzing}
               data-testid="btn-analyze-ux"
             >
@@ -431,7 +461,7 @@ export function OptimizationPanel({
                   type="button"
                   size="sm"
                   data-testid="btn-reanalyze-after-apply"
-                  onClick={handleAnalyze}
+                  onClick={() => handleAnalyze()}
                   disabled={isAnalyzing}
                   className="mt-2 text-xs h-7 bg-amber-600 hover:bg-amber-700 text-white flex items-center gap-1.5 shadow-xs"
                 >
@@ -1012,7 +1042,7 @@ export function OptimizationPanel({
               </div>
 
               {/* Findings List */}
-              <div className="space-y-2.5">
+              <div data-testid="findings-list" className="space-y-2.5">
                 <div className="flex items-center justify-between text-xs font-medium text-zinc-500">
                   <span>
                     Findings ({filteredFindings.length} of{" "}
@@ -1161,8 +1191,314 @@ export function OptimizationPanel({
               </p>
             </div>
           )}
+
+          {/* ─── Evidence Modes: Simulated Preview vs Production Live ─── */}
+          <div className="pt-2 border-t border-zinc-200 dark:border-zinc-800 space-y-2">
+            <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-900 p-0.5 rounded-lg border border-zinc-200 dark:border-zinc-800 text-xs">
+              <button
+                type="button"
+                onClick={() => setEvidenceMode("preview")}
+                data-testid="tab-evidence-preview"
+                className={`flex-1 py-1 px-2 rounded-md font-medium text-center transition-colors cursor-pointer ${
+                  evidenceMode === "preview"
+                    ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-xs"
+                    : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+                }`}
+              >
+                Simulated (Preview)
+              </button>
+              <button
+                type="button"
+                onClick={() => setEvidenceMode("production")}
+                data-testid="tab-evidence-production"
+                className={`flex-1 py-1 px-2 rounded-md font-medium text-center transition-colors flex items-center justify-center gap-1.5 cursor-pointer ${
+                  evidenceMode === "production"
+                    ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-xs"
+                    : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+                }`}
+              >
+                <Globe className="w-3 h-3 text-blue-500" />
+                <span>Production (Live)</span>
+              </button>
+            </div>
+
+            {evidenceMode === "preview" ? (
+              interactionSummary && interactionSummary.totalEvents > 0 ? (
+                <InteractionEvidenceSection
+                  summary={interactionSummary}
+                  onSelectNode={onSelectNode}
+                  selectedId={selectedId}
+                />
+              ) : (
+                <div className="p-3 text-center text-xs text-zinc-400 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-lg">
+                  Switch to Preview mode to simulate user interactions.
+                </div>
+              )
+            ) : (
+              <ProductionEvidenceDashboard
+                projectId={projectId}
+                onSelectNode={onSelectNode}
+                selectedId={selectedId}
+                onCreateOptimizationFromLiveEvidence={handleCreateOptimizationFromLiveEvidence}
+                isCreatingOptimization={isAnalyzing}
+              />
+            )}
+          </div>
         </div>
       </ScrollArea>
     </aside>
+  );
+}
+
+// ─── Interaction Evidence Sub-Component ─────────────────────────────────
+
+function InteractionEvidenceSection({
+  summary,
+  onSelectNode,
+  selectedId,
+}: {
+  summary: InteractionSessionSummary;
+  onSelectNode: (id: string | null) => void;
+  selectedId: string | null;
+}) {
+  const [showZeroInteraction, setShowZeroInteraction] = useState(false);
+
+  const sessionDurationSec = summary.timeOnPageMs / 1000;
+  const formatDuration = (sec: number) => {
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    return m > 0 ? `${m}m ${s}s` : `${s}s`;
+  };
+
+  const scrollPercent = [
+    summary.scrollDepth.reached100 ? 100 : 0,
+    summary.scrollDepth.reached75 ? 75 : 0,
+    summary.scrollDepth.reached50 ? 50 : 0,
+    summary.scrollDepth.reached25 ? 25 : 0,
+  ].find((v) => v > 0) || 0;
+
+  const ctaEntries = Object.entries(summary.ctaClicks)
+    .map(([id, count]) => ({ id, count }))
+    .sort((a, b) => b.count - a.count);
+
+  const formEntries = Object.entries(summary.formInteractions)
+    .map(([id, data]) => ({ id, ...data }))
+    .filter((e) => e.focusCount > 0 || e.changeCount > 0);
+
+  return (
+    <div
+      data-testid="interaction-evidence-section"
+      className="p-3.5 rounded-xl bg-gradient-to-b from-violet-50/50 to-white dark:from-violet-950/20 dark:to-zinc-900 border border-violet-200/60 dark:border-violet-800/40 space-y-3 shadow-xs"
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <Eye className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+          <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+            Interaction Evidence
+          </span>
+        </div>
+        <Badge
+          variant="outline"
+          className="text-[10px] text-violet-700 dark:text-violet-300 border-violet-300 dark:border-violet-700"
+        >
+          {summary.totalEvents} events
+        </Badge>
+      </div>
+
+      {/* Session Info */}
+      <div
+        data-testid="interaction-session-info"
+        className="p-2 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-[11px] text-zinc-600 dark:text-zinc-400 flex items-center justify-between"
+      >
+        <span>1 session · <span className="capitalize">{summary.viewport}</span> viewport</span>
+        <span className="font-mono font-semibold text-zinc-800 dark:text-zinc-200">
+          {formatDuration(sessionDurationSec)}
+        </span>
+      </div>
+
+      {/* Scroll Depth */}
+      <div data-testid="interaction-scroll-depth" className="space-y-1.5">
+        <div className="flex items-center justify-between text-[11px]">
+          <div className="flex items-center gap-1 text-zinc-700 dark:text-zinc-300 font-semibold">
+            <ArrowDown className="w-3 h-3 text-violet-500" />
+            <span>Scroll Depth</span>
+          </div>
+          <span className="text-[10px] font-mono text-zinc-500">{scrollPercent}%</span>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="relative w-full h-2 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
+          <div
+            className="absolute inset-y-0 left-0 bg-gradient-to-r from-violet-500 to-violet-400 rounded-full transition-all duration-500"
+            style={{ width: `${scrollPercent}%` }}
+          />
+        </div>
+
+        {/* Threshold Markers */}
+        <div className="flex items-center justify-between text-[9px] text-zinc-400 px-0.5">
+          {([25, 50, 75, 100] as const).map((t) => {
+            const key = `reached${t}` as keyof typeof summary.scrollDepth;
+            const reached = summary.scrollDepth[key];
+            return (
+              <span
+                key={t}
+                className={`font-mono ${
+                  reached
+                    ? "text-violet-600 dark:text-violet-400 font-bold"
+                    : "text-zinc-400"
+                }`}
+              >
+                {t}%{reached ? " ✓" : ""}
+              </span>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* CTA Click Counts */}
+      {ctaEntries.length > 0 && (
+        <div data-testid="interaction-cta-clicks" className="space-y-1.5">
+          <div className="flex items-center gap-1 text-[11px] text-zinc-700 dark:text-zinc-300 font-semibold">
+            <MousePointer2 className="w-3 h-3 text-emerald-500" />
+            <span>CTA Clicks ({ctaEntries.length})</span>
+          </div>
+          <div className="space-y-1">
+            {ctaEntries.map(({ id, count }) => (
+              <button
+                key={`cta-${id}`}
+                type="button"
+                data-testid={`interaction-cta-${id}`}
+                onClick={() => onSelectNode(id)}
+                className={`w-full flex items-center justify-between p-1.5 rounded text-[11px] border transition-colors cursor-pointer ${
+                  selectedId === id
+                    ? "bg-violet-50 dark:bg-violet-950/30 border-violet-400 dark:border-violet-600"
+                    : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-violet-300 dark:hover:border-violet-700"
+                }`}
+              >
+                <span className="font-mono text-zinc-700 dark:text-zinc-300 truncate">#{id}</span>
+                <Badge
+                  variant="success"
+                  className="text-[9px] ml-1 shrink-0"
+                >
+                  {count} click{count !== 1 ? "s" : ""}
+                </Badge>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Most Clicked Elements */}
+      {summary.mostClickedElements.length > 0 && (
+        <div data-testid="interaction-most-clicked" className="space-y-1.5">
+          <div className="flex items-center gap-1 text-[11px] text-zinc-700 dark:text-zinc-300 font-semibold">
+            <MousePointer2 className="w-3 h-3 text-blue-500" />
+            <span>Most Clicked ({summary.mostClickedElements.length})</span>
+          </div>
+          <div className="space-y-1">
+            {summary.mostClickedElements.slice(0, 5).map(({ editorId, tagName, count }) => (
+              <button
+                key={`click-${editorId}`}
+                type="button"
+                data-testid={`interaction-clicked-${editorId}`}
+                onClick={() => onSelectNode(editorId)}
+                className={`w-full flex items-center justify-between p-1.5 rounded text-[11px] border transition-colors cursor-pointer ${
+                  selectedId === editorId
+                    ? "bg-blue-50 dark:bg-blue-950/30 border-blue-400 dark:border-blue-600"
+                    : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-blue-300 dark:hover:border-blue-700"
+                }`}
+              >
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="text-[10px] text-zinc-400 font-mono">&lt;{tagName}&gt;</span>
+                  <span className="text-zinc-600 dark:text-zinc-400 font-mono truncate">#{editorId}</span>
+                </div>
+                <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 shrink-0 ml-1">
+                  {count}×
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Form Interactions */}
+      {formEntries.length > 0 && (
+        <div data-testid="interaction-form-interactions" className="space-y-1.5">
+          <div className="flex items-center gap-1 text-[11px] text-zinc-700 dark:text-zinc-300 font-semibold">
+            <FormInput className="w-3 h-3 text-amber-500" />
+            <span>Form Interactions ({formEntries.length})</span>
+          </div>
+          <div className="space-y-1">
+            {formEntries.map(({ id, focusCount, changeCount, fieldType }) => (
+              <button
+                key={`form-${id}`}
+                type="button"
+                onClick={() => onSelectNode(id)}
+                className={`w-full flex items-center justify-between p-1.5 rounded text-[11px] border transition-colors cursor-pointer ${
+                  selectedId === id
+                    ? "bg-amber-50 dark:bg-amber-950/30 border-amber-400 dark:border-amber-600"
+                    : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-amber-300 dark:hover:border-amber-700"
+                }`}
+              >
+                <div className="flex items-center gap-1.5 min-w-0">
+                  {fieldType && (
+                    <span className="text-[9px] uppercase font-bold text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/40 px-1 py-0.5 rounded">
+                      {fieldType}
+                    </span>
+                  )}
+                  <span className="text-zinc-600 dark:text-zinc-400 font-mono truncate">#{id}</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 shrink-0 ml-1">
+                  <span>{focusCount} focus</span>
+                  <span>·</span>
+                  <span>{changeCount} change</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Zero Interaction Elements (Collapsible) */}
+      {summary.elementsWithNoInteraction.length > 0 && (
+        <div data-testid="interaction-zero-elements" className="space-y-1">
+          <button
+            type="button"
+            onClick={() => setShowZeroInteraction(!showZeroInteraction)}
+            className="w-full flex items-center justify-between text-[11px] text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 cursor-pointer py-1 transition-colors"
+          >
+            <span className="font-medium">
+              Elements with no interaction ({summary.elementsWithNoInteraction.length})
+            </span>
+            {showZeroInteraction ? (
+              <ChevronUp className="w-3 h-3" />
+            ) : (
+              <ChevronDown className="w-3 h-3" />
+            )}
+          </button>
+
+          {showZeroInteraction && (
+            <div className="max-h-40 overflow-y-auto space-y-0.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 p-2">
+              {summary.elementsWithNoInteraction.slice(0, 50).map((id) => (
+                <button
+                  key={`zero-${id}`}
+                  type="button"
+                  onClick={() => onSelectNode(id)}
+                  className="w-full text-left px-1.5 py-0.5 rounded text-[10px] font-mono text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors truncate"
+                >
+                  #{id}
+                </button>
+              ))}
+              {summary.elementsWithNoInteraction.length > 50 && (
+                <p className="text-[10px] text-zinc-400 text-center pt-1">
+                  +{summary.elementsWithNoInteraction.length - 50} more
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { html, viewport, revision } = parseResult.data;
+    const { html, viewport, revision, liveEvidence } = parseResult.data;
 
     // Check if client requests streaming
     const acceptHeader = req.headers.get("accept") || "";
@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
       req.nextUrl.searchParams.get("stream") === "true";
 
     if (!wantsStream) {
-      const result = analyzeDocumentUX(html, { viewport, revision });
+      const result = analyzeDocumentUX(html, { viewport, revision, liveEvidence });
       return NextResponse.json({ result });
     }
 
@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
           await new Promise((r) => setTimeout(r, 40));
 
           // Perform deterministic analysis
-          const result = analyzeDocumentUX(html, { viewport, revision });
+          const result = analyzeDocumentUX(html, { viewport, revision, liveEvidence });
 
           // Send result
           sendEvent({

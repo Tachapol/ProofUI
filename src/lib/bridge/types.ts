@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { EditorOperationSchema } from "../editor/operation-schema";
+import { InteractionEventSchema } from "../interaction/schemas";
 
 export const DOMRectDataSchema = z.object({
   top: z.number(),
@@ -70,6 +71,11 @@ export const DocumentMutatedPayloadSchema = z.object({
   revision: z.number().optional(),
 });
 
+export const InteractionEventPayloadSchema = z.object({
+  sessionId: z.string(),
+  event: InteractionEventSchema,
+});
+
 export const IframeToParentMessageSchema = z.discriminatedUnion("type", [
   z.object({
     source: z.literal("visual-editor-iframe"),
@@ -95,6 +101,11 @@ export const IframeToParentMessageSchema = z.discriminatedUnion("type", [
     source: z.literal("visual-editor-iframe"),
     type: z.literal("DOCUMENT_MUTATED"),
     payload: DocumentMutatedPayloadSchema,
+  }),
+  z.object({
+    source: z.literal("visual-editor-iframe"),
+    type: z.literal("INTERACTION_EVENT"),
+    payload: InteractionEventPayloadSchema,
   }),
 ]);
 export type IframeToParentMessage = z.infer<typeof IframeToParentMessageSchema>;

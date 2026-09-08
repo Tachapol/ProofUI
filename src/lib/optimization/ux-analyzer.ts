@@ -1,4 +1,5 @@
 import * as parse5 from "parse5";
+import type { AggregatedProductionEvidence } from "../production/schemas";
 import {
   UXAnalysisResult,
   UXAnalysisViewport,
@@ -135,6 +136,7 @@ function hasAccessibleName(el: DOMElementInfo): boolean {
 export interface AnalyzeUXOptions {
   viewport?: UXAnalysisViewport;
   revision?: number;
+  liveEvidence?: AggregatedProductionEvidence | null;
 }
 
 /**
@@ -483,6 +485,79 @@ export function analyzeDocumentUX(
       [],
       "No interactive button or link matches high-converting CTA text or prominent visual styling."
     );
+  }
+
+  // -------------------------------------------------------------
+  // Check 9: Live Production Evidence Integration
+  // -------------------------------------------------------------
+  if (options.liveEvidence && options.liveEvidence.totalSessions > 0) {
+    const live = options.liveEvidence;
+    const totalCtaClicks = Object.values(live.ctaClickCounts || {}).reduce(
+      (sum, val) => sum + val,
+      0
+    );
+
+    // 1. Low CTA conversion rate
+    if (live.totalSessions >= 1) {
+      const conversionRate = totalCtaClicks / live.totalSessions;
+      if (conversionRate < 0.25 || totalCtaClicks === 0) {
+        addFinding(
+          "conversion",
+          "warning",
+          "Low CTA conversion rate observed in production evidence",
+          "Increase visual prominence, contrast, or clarify the value proposition of primary call-to-action buttons.",
+          0.9,
+          Object.keys(live.ctaClickCounts || {}),
+          `Production evidence recorded ${live.totalSessions} session(s) with only ${totalCtaClicks} CTA click(s) (${(conversionRate * 100).toFixed(1)}% conversion rate).`
+        );
+      }
+    }
+
+    // 2. High scroll drop-off before reaching lower sections
+    if (
+      live.scrollDepthDistribution.reached25 > 0 &&
+      live.scrollDepthDistribution.reached75 / live.scrollDepthDistribution.reached25 < 0.35 &&
+      live.totalSessions >= 3
+    ) {
+      addFinding(
+        "conversion",
+        "warning",
+        "High scroll drop-off before reaching key page sections",
+        "Move primary value propositions, social proof, and action triggers higher up on the page to capture visitor attention early.",
+        0.85,
+        [],
+        `Only ${live.scrollDepthDistribution.reached75} of ${live.scrollDepthDistribution.reached25} visitors who began scrolling reached 75% depth.`
+      );
+    }
+
+    // 3. Low interaction on important elements
+    if (live.lowInteractionImportantElements && live.lowInteractionImportantElements.length > 0) {
+      for (const item of live.lowInteractionImportantElements.slice(0, 3)) {
+        addFinding(
+          "conversion",
+          "info",
+          `Important element received zero interactions in production`,
+          "Improve visual affordance, button styling, or reposition this element for better discoverability.",
+          0.8,
+          [item.editorId],
+          item.reason
+        );
+      }
+    }
+
+    // 4. High bounce rate (<15s)
+    const quickExits = live.durationBuckets["<15s"] || 0;
+    if (live.totalSessions >= 5 && quickExits / live.totalSessions >= 0.5) {
+      addFinding(
+        "conversion",
+        "warning",
+        "High bounce rate observed in production (<15s visits)",
+        "Refine hero messaging, page load speed, and initial visual hierarchy to engage visitors within the first 10 seconds.",
+        0.85,
+        [],
+        `${quickExits} of ${live.totalSessions} visitors (${((quickExits / live.totalSessions) * 100).toFixed(0)}%) exited the page in less than 15 seconds.`
+      );
+    }
   }
 
   // -------------------------------------------------------------

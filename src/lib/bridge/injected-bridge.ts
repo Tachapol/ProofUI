@@ -197,7 +197,54 @@ export function getInjectedBridgeScript(sessionId = "editor-session"): string {
     }
   }, true);
 
-  // Click selection
+  // ─── Interaction Tracking State (Preview Mode Only) ─────────────────────
+  var CTA_TAG_NAMES = ['BUTTON', 'A'];
+  var CTA_ROLES = ['button', 'link'];
+  var CTA_CLASS_HINTS = ['cta', 'btn', 'button', 'action', 'submit', 'signup', 'sign-up', 'get-started', 'try-free', 'download'];
+  var scrollThresholds = { 25: false, 50: false, 75: false, 100: false };
+  var interactionEventCount = 0;
+  var MAX_INTERACTION_EVENTS = 10000;
+  var currentViewport = 'desktop'; // Updated via SET_EDITOR_MODE or inferred
+
+  function getViewportFromWidth() {
+    var w = window.innerWidth;
+    if (w <= 480) return 'mobile';
+    if (w <= 820) return 'tablet';
+    return 'desktop';
+  }
+  currentViewport = getViewportFromWidth();
+
+  function isCTAElement(el) {
+    if (!el) return false;
+    var tag = el.tagName.toUpperCase();
+    if (CTA_TAG_NAMES.indexOf(tag) !== -1) return true;
+    var role = (el.getAttribute('role') || '').toLowerCase();
+    if (CTA_ROLES.indexOf(role) !== -1) return true;
+    var className = (el.className && typeof el.className === 'string') ? el.className.toLowerCase() : '';
+    for (var i = 0; i < CTA_CLASS_HINTS.length; i++) {
+      if (className.indexOf(CTA_CLASS_HINTS[i]) !== -1) return true;
+    }
+    return false;
+  }
+
+  function postInteractionEvent(type, el, metadata) {
+    if (interactionEventCount >= MAX_INTERACTION_EVENTS) return;
+    interactionEventCount++;
+    var editorId = el ? (el.getAttribute('data-editor-id') || '') : '';
+    var tagName = el ? el.tagName.toLowerCase() : '';
+    postToParent('INTERACTION_EVENT', {
+      event: {
+        type: type,
+        editorId: editorId,
+        tagName: tagName,
+        timestamp: Date.now(),
+        viewport: currentViewport,
+        metadata: metadata || undefined
+      }
+    });
+  }
+
+  // Click selection & interaction tracking
   document.addEventListener('click', function(e) {
     if (currentEditorMode === 'preview') {
       // In preview mode, allow normal interaction, but prevent javascript: URLs
@@ -206,6 +253,17 @@ export function getInjectedBridgeScript(sessionId = "editor-session"): string {
         var href = anchor.getAttribute('href') || '';
         if (href.indexOf('javascript:') === 0) {
           e.preventDefault();
+        }
+      }
+
+      // Track interaction evidence
+      var interactTarget = findClosestEditable(e.target);
+      if (interactTarget) {
+        var ctaDetected = isCTAElement(interactTarget) || (e.target && isCTAElement(e.target));
+        if (ctaDetected) {
+          postInteractionEvent('cta_click', interactTarget, { isCta: true });
+        } else {
+          postInteractionEvent('click', interactTarget);
         }
       }
       return;
@@ -225,6 +283,64 @@ export function getInjectedBridgeScript(sessionId = "editor-session"): string {
       tagName: target.tagName.toLowerCase(),
       path: getPath(target)
     });
+  }, true);
+
+  // ─── Scroll Depth Tracking (Preview Mode) ─────────────────────────────
+  function checkScrollDepth() {
+    if (currentEditorMode !== 'preview') return;
+    var scrollTop = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+    var docHeight = Math.max(
+      document.body.scrollHeight || 0,
+      document.documentElement.scrollHeight || 0
+    );
+    var viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+    var scrollableHeight = docHeight - viewportHeight;
+    if (scrollableHeight <= 0) return;
+
+    var percent = Math.min(100, Math.round((scrollTop / scrollableHeight) * 100));
+    var thresholds = [25, 50, 75, 100];
+    for (var i = 0; i < thresholds.length; i++) {
+      var t = thresholds[i];
+      if (percent >= t && !scrollThresholds[t]) {
+        scrollThresholds[t] = true;
+        postInteractionEvent('scroll_depth', document.body, { scrollPercent: t });
+      }
+    }
+  }
+
+  window.addEventListener('scroll', function() {
+    checkScrollDepth();
+  }, { passive: true });
+
+  // ─── Form Interaction Tracking (Preview Mode) ─────────────────────────
+  // Track focus on form elements — NEVER capture field values
+  document.addEventListener('focusin', function(e) {
+    if (currentEditorMode !== 'preview') return;
+    var el = e.target;
+    if (!el || !el.tagName) return;
+    var tag = el.tagName.toUpperCase();
+    if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') return;
+
+    var closestEditable = findClosestEditable(el);
+    if (!closestEditable) return;
+
+    var fieldType = el.getAttribute('type') || tag.toLowerCase();
+    postInteractionEvent('form_focus', closestEditable, { formFieldType: fieldType });
+  }, true);
+
+  // Track change on form elements — NEVER capture field values
+  document.addEventListener('change', function(e) {
+    if (currentEditorMode !== 'preview') return;
+    var el = e.target;
+    if (!el || !el.tagName) return;
+    var tag = el.tagName.toUpperCase();
+    if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') return;
+
+    var closestEditable = findClosestEditable(el);
+    if (!closestEditable) return;
+
+    var fieldType = el.getAttribute('type') || tag.toLowerCase();
+    postInteractionEvent('form_change', closestEditable, { formFieldType: fieldType });
   }, true);
 
   // Sync rects on scroll & resize
@@ -253,6 +369,10 @@ export function getInjectedBridgeScript(sessionId = "editor-session"): string {
         selectedElement = null;
         postToParent('NODE_HOVERED', { id: null, rect: null, tagName: null });
         postToParent('NODE_SELECTED', { id: null, rect: null, tagName: null, path: [] });
+        // Reset interaction tracking for fresh preview session
+        scrollThresholds = { 25: false, 50: false, 75: false, 100: false };
+        interactionEventCount = 0;
+        currentViewport = getViewportFromWidth();
       }
       return;
     }

@@ -61,6 +61,7 @@ export const UXAnalyzeRequestSchema = z.object({
   html: z.string().min(1, "HTML document is required"),
   viewport: UXAnalysisViewportSchema.default("desktop"),
   revision: z.number().int().default(1),
+  liveEvidence: z.any().optional().nullable(),
 });
 export type UXAnalyzeRequest = z.infer<typeof UXAnalyzeRequestSchema>;
 

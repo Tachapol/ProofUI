@@ -21,6 +21,7 @@ import {
   Moon,
   Globe,
   History,
+  Rocket,
 } from "lucide-react";
 import { SerializedNode } from "@/lib/bridge/types";
 import { VIEWPORT_PRESETS, ViewportMode } from "@/lib/editor/constants";
@@ -60,6 +61,7 @@ interface ToolbarProps {
   onOpenImportDialog: () => void;
   onOpenVersionHistory?: () => void;
   onOpenOptimization?: () => void;
+  onOpenPublish?: () => void;
   isLayersActive?: boolean;
   onToggleLayers?: () => void;
   isAIActive?: boolean;
@@ -94,6 +96,7 @@ export function Toolbar({
   onOpenImportDialog,
   onOpenVersionHistory,
   onOpenOptimization,
+  onOpenPublish,
   isLayersActive,
   onToggleLayers,
   isAIActive,
@@ -438,6 +441,21 @@ export function Toolbar({
           >
             <Sparkles className="w-3.5 h-3.5" />
             <span className="hidden md:inline">Analyze UX</span>
+          </Button>
+        )}
+
+        {/* Publish & Deploy Trigger */}
+        {onOpenPublish && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onOpenPublish}
+            data-testid="toolbar-btn-publish"
+            className="gap-1.5 font-medium border-emerald-200 dark:border-emerald-900 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950"
+            title="Publish & Deploy Document"
+          >
+            <Rocket className="w-3.5 h-3.5" />
+            <span className="hidden md:inline">Publish</span>
           </Button>
         )}
 

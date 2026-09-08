@@ -56,6 +56,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { ImportWebsiteDialog } from "@/components/import/ImportWebsiteDialog";
+import { PublishDialog } from "./PublishDialog";
+import { useInteractionEvidence } from "@/lib/interaction/useInteractionEvidence";
 
 export function EditorShell() {
   // Stable editor session ID in parent
@@ -77,6 +79,9 @@ export function EditorShell() {
   const [documentTree, setDocumentTree] = useState<SerializedNode | null>(null);
   const [rightSidebarTab, setRightSidebarTab] = useState<"properties" | "optimization">("properties");
   const [uxAnalysis, setUxAnalysis] = useState<UXAnalysisResult | null>(null);
+
+  // Interaction evidence tracking for preview mode
+  const interactionEvidence = useInteractionEvidence(documentTree);
 
   // Theme state: default to dark mode with local persistence
   const [theme, setTheme] = useState<ThemeMode>(() => {
@@ -166,6 +171,11 @@ export function EditorShell() {
 
   // Website Import State
   const [showImportDialog, setShowImportDialog] = useState(false);
+
+  // Publish & Deploy Dialog State
+  const [showPublishDialog, setShowPublishDialog] = useState(false);
+  const [projectId] = useState("proj_default");
+  const [pageId] = useState("page_landing");
 
   // Generation Candidate Preview state
   const [candidate, setCandidate] = useState<GenerationCandidate | null>(null);
@@ -968,9 +978,15 @@ export function EditorShell() {
           type: "SET_EDITOR_MODE",
           payload: { sessionId, mode: targetMode },
         });
+        // Start/end interaction tracking session
+        if (targetMode === "preview") {
+          interactionEvidence.startSession(sessionId, viewport as "desktop" | "tablet" | "mobile");
+        } else {
+          interactionEvidence.endSession();
+        }
       }
     },
-    [editorMode, hasUnappliedCodeChanges, sessionId, sendToIframe]
+    [editorMode, hasUnappliedCodeChanges, sessionId, sendToIframe, interactionEvidence, viewport]
   );
 
   // Selection & Hover Handlers
@@ -1071,12 +1087,16 @@ export function EditorShell() {
         case "DOCUMENT_MUTATED":
           setDocumentTree(message.payload.documentTree);
           break;
+
+        case "INTERACTION_EVENT":
+          interactionEvidence.processEvent(message.payload.event);
+          break;
       }
     };
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [sessionId, revision, canonicalSource, activeCandidate, sendToIframe]);
+  }, [sessionId, revision, canonicalSource, activeCandidate, sendToIframe, interactionEvidence]);
 
   // Active handshake connection until documentTree is received
   useEffect(() => {
@@ -1145,6 +1165,7 @@ export function EditorShell() {
         isLayersActive={!isLayersCollapsed}
         onOpenImportDialog={() => setShowImportDialog(true)}
         onOpenVersionHistory={() => setShowVersionHistoryDialog(true)}
+        onOpenPublish={() => setShowPublishDialog(true)}
         onOpenOptimization={() => {
           if (isRightSidebarCollapsed) {
             setRightSidebarTab("optimization");
@@ -1374,6 +1395,7 @@ export function EditorShell() {
                     ) : (
                       <OptimizationPanel
                         canonicalHtml={canonicalSource}
+                        projectId={projectId}
                         currentRevision={revision}
                         selectedId={selectedId}
                         onSelectNode={handleSelectNode}
@@ -1385,6 +1407,7 @@ export function EditorShell() {
                         candidate={activeCandidate}
                         onApplyCandidate={handleApplyCandidate}
                         onRejectCandidate={handleRejectCandidate}
+                        interactionSummary={interactionEvidence.summary}
                       />
                     )}
                   </div>
@@ -1466,6 +1489,17 @@ export function EditorShell() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Publish and Deploy Dialog */}
+      <PublishDialog
+        open={showPublishDialog}
+        onOpenChange={setShowPublishDialog}
+        canonicalHtml={canonicalSource}
+        currentRevision={revision}
+        versions={versions}
+        projectId={projectId}
+        pageId={pageId}
+      />
     </div>
   );
 }
