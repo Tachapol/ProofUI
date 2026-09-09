@@ -100,6 +100,9 @@ export const ProductionTelemetryPayloadSchema = z
       z.string().min(1).max(64).regex(/^[a-zA-Z0-9_\-]+$/),
       z.number().int().min(1).max(1000)
     ).optional().default({}),
+    // Optional UX Experiment context
+    experimentId: z.string().min(1).max(64).regex(/^[a-zA-Z0-9_\-]+$/).optional(),
+    variantId: z.enum(["control", "variant"]).optional(),
     // Client tracker version
     trackerVersion: z.string().max(32).default(PROOFUI_TRACKER_VERSION),
   })

@@ -106,7 +106,9 @@ export async function POST(req: NextRequest) {
     }
 
     // 7. Aggregate into store (bounded metrics only, never stores client IP or session tokens)
-    productionStore.recordTelemetry(payload);
+    if (!productionStore.recordTelemetry(payload)) {
+      return NextResponse.json({ error: "Experiment assignment does not match the published project/page/version." }, { status: 400 });
+    }
 
     return NextResponse.json({ success: true }, { status: 200, headers: corsHeaders });
   } catch (err) {

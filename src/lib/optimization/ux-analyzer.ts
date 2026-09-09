@@ -1,5 +1,6 @@
 import * as parse5 from "parse5";
 import type { AggregatedProductionEvidence } from "../production/schemas";
+import type { ExperimentEvaluationResult } from "../experiment/decisioning";
 import {
   UXAnalysisResult,
   UXAnalysisViewport,
@@ -137,6 +138,7 @@ export interface AnalyzeUXOptions {
   viewport?: UXAnalysisViewport;
   revision?: number;
   liveEvidence?: AggregatedProductionEvidence | null;
+  experimentEvidence?: ExperimentEvaluationResult | null;
 }
 
 /**
@@ -556,6 +558,50 @@ export function analyzeDocumentUX(
         0.85,
         [],
         `${quickExits} of ${live.totalSessions} visitors (${((quickExits / live.totalSessions) * 100).toFixed(0)}%) exited the page in less than 15 seconds.`
+      );
+    }
+  }
+
+  // -------------------------------------------------------------
+  // Check 10: Live Experiment Decisioning Evidence
+  // -------------------------------------------------------------
+  if (options.experimentEvidence) {
+    const exp = options.experimentEvidence;
+    if (exp.hasSufficientData) {
+      if (exp.winner === "variant") {
+        const liftPct =
+          exp.control.conversionRate > 0
+            ? (((exp.variant.conversionRate - exp.control.conversionRate) / exp.control.conversionRate) * 100).toFixed(1)
+            : "+100";
+        addFinding(
+          "conversion",
+          "info",
+          `A/B Experiment Winner: Variant demonstrated +${liftPct}% conversion lift`,
+          `Promote the winning variant (${exp.variant.versionId}) to active production to maximize conversion rate.`,
+          Math.min(0.99, exp.confidence),
+          [],
+          exp.recommendationSummary
+        );
+      } else if (exp.winner === "control") {
+        addFinding(
+          "conversion",
+          "warning",
+          `A/B Experiment: Tested variant underperformed control`,
+          `Retain current control layout and messaging. Re-evaluate proposed design changes against control benchmarks before applying.`,
+          Math.min(0.99, exp.confidence),
+          [],
+          exp.recommendationSummary
+        );
+      }
+    } else {
+      addFinding(
+        "conversion",
+        "info",
+        `A/B Experiment: Insufficient data to conclude winner`,
+        `Allow experiment to gather more visitor sessions before drawing conclusions (collected ${exp.control.sessions + exp.variant.sessions} / ${exp.minSampleSize} required sessions).`,
+        0.5,
+        [],
+        exp.recommendationSummary
       );
     }
   }

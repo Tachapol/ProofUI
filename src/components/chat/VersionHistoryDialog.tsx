@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { History, RotateCcw, X, Clock, CheckCircle2 } from "lucide-react";
+import { History, RotateCcw, X, Clock, CheckCircle2, FlaskConical } from "lucide-react";
 import { DocumentVersion } from "@/lib/generation/schemas";
 import { Button } from "@/components/ui/button";
 
@@ -11,6 +11,7 @@ interface VersionHistoryDialogProps {
   versions: DocumentVersion[];
   currentRevision: number;
   onRestoreVersion: (versionId: string) => void;
+  onCreateExperiment?: (controlVersionId: string, variantVersionId: string) => void;
 }
 
 export function VersionHistoryDialog({
@@ -19,6 +20,7 @@ export function VersionHistoryDialog({
   versions,
   currentRevision,
   onRestoreVersion,
+  onCreateExperiment,
 }: VersionHistoryDialogProps) {
   const [confirmRestoreId, setConfirmRestoreId] = useState<string | null>(null);
 
@@ -82,17 +84,36 @@ export function VersionHistoryDialog({
                         <span>Current</span>
                       </span>
                     ) : (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setConfirmRestoreId(ver.id)}
-                        data-testid={`btn-restore-version-${ver.id}`}
-                        className="h-6 px-2 text-[11px] gap-1"
-                      >
-                        <RotateCcw className="w-3 h-3" />
-                        <span>Restore</span>
-                      </Button>
+                      <div className="flex items-center gap-1.5">
+                        {onCreateExperiment && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const currentVer = versions.find((v) => v.revision === currentRevision);
+                              onCreateExperiment(currentVer ? currentVer.id : versions[0].id, ver.id);
+                              onClose();
+                            }}
+                            data-testid={`btn-experiment-version-${ver.id}`}
+                            className="h-6 px-2 text-[11px] gap-1 text-purple-600 hover:text-purple-700"
+                          >
+                            <FlaskConical className="w-3 h-3" />
+                            <span>Experiment</span>
+                          </Button>
+                        )}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setConfirmRestoreId(ver.id)}
+                          data-testid={`btn-restore-version-${ver.id}`}
+                          className="h-6 px-2 text-[11px] gap-1"
+                        >
+                          <RotateCcw className="w-3 h-3" />
+                          <span>Restore</span>
+                        </Button>
+                      </div>
                     )}
                   </div>
 

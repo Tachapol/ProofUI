@@ -2,6 +2,7 @@ import { EDITOR_CONFIG } from "./constants";
 import { CapturePackage } from "../import/schemas";
 import { Conversation, ChatMessage } from "../chat/schemas";
 import { DocumentVersion } from "../generation/schemas";
+import { ReviewState, ReviewStateSchema } from "../review/workflow";
 
 export interface EditorDocumentContext {
   title: string;
@@ -17,6 +18,7 @@ export interface EditorDocumentContext {
 }
 
 export interface StoredEditorProject {
+  review?: ReviewState;
   schemaVersion: number;
   document: {
     source: string;
@@ -87,6 +89,8 @@ export function loadProjectFromStorage(): StoredEditorProject | null {
           conversations: Array.isArray(data.conversations) ? data.conversations : [],
           messages: Array.isArray(data.messages) ? data.messages : [],
           versions: Array.isArray(data.versions) ? data.versions : [],
+          review: ReviewStateSchema.safeParse(data.review).success
+            ? ReviewStateSchema.parse(data.review) : undefined,
           activeConversationId: data.activeConversationId || null,
           sidebar: data.sidebar || { width: 380, isCollapsed: false },
           timestamp: data.timestamp || Date.now(),

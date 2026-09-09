@@ -37,15 +37,15 @@ test.describe("Milestone 5.2C: Before/After Evidence Comparison", () => {
     const comparisonCard = page.locator('[data-testid="optimization-comparison-card"]');
     await expect(comparisonCard).toBeVisible({ timeout: 15000 });
 
-    // 6. Verify Score Delta display (e.g. UX score: X → Y (+Z))
+    // 6. Verify Score Delta display (e.g. Heuristic score: X → Y (+Z))
     const scoreDelta = page.locator('[data-testid="comparison-score-delta"]');
     await expect(scoreDelta).toBeVisible();
-    await expect(scoreDelta).toContainText("UX score:");
+    await expect(scoreDelta).toContainText("Heuristic score:");
 
     // Verify canvas preview banner also displays score delta badge
     const bannerScoreDelta = page.locator('[data-testid="banner-ux-score-delta"]');
     await expect(bannerScoreDelta).toBeVisible();
-    await expect(bannerScoreDelta).toContainText("UX score:");
+    await expect(bannerScoreDelta).toContainText("Heuristic score:");
 
     // 7. Verify Resolved, Remaining, and New Issues sections
     const resolvedSection = page.locator('[data-testid="comparison-resolved-section"]');

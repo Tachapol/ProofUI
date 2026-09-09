@@ -99,7 +99,7 @@ export function ProductionEvidenceDashboard({
     const combined: AggregatedProductionEvidence = {
       projectId,
       pageId: evidenceList[0].pageId,
-      versionId: "all",
+      versionId: evidenceList.length === 1 ? evidenceList[0].versionId : "all",
       totalSessions: 0,
       viewportDistribution: { desktop: 0, tablet: 0, mobile: 0 },
       durationBuckets: { "<15s": 0, "15-30s": 0, "30-60s": 0, "1-3m": 0, ">3m": 0 },

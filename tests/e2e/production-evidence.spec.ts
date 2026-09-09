@@ -105,15 +105,15 @@ test.describe("Milestone 5.4: Production Evidence & Deploy E2E", () => {
     const dashboard = page.locator('[data-testid="production-evidence-dashboard"]');
     await expect(dashboard).toBeVisible();
 
-    // Select the version in filter dropdown
+    // Check total sessions
+    const totalSessions = page.locator('[data-testid="production-total-sessions"]');
+    await expect(totalSessions).toContainText("Total Validated Sessions:");
+
+    // Select the version in filter dropdown if visible
     const filterSelect = page.locator('[data-testid="production-version-filter"]');
     if (await filterSelect.isVisible()) {
       await filterSelect.selectOption(versionId);
     }
-
-    // Check total sessions
-    const totalSessions = page.locator('[data-testid="production-total-sessions"]');
-    await expect(totalSessions).toContainText("Total Validated Sessions:");
 
     // Check scroll depth distribution
     const scrollDepth = page.locator('[data-testid="production-scroll-depth"]');

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useMemo, useEffect } from "react";
+import React, { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import {
   Sparkles,
   AlertCircle,
@@ -24,6 +24,7 @@ import {
   ChevronDown,
   ChevronUp,
   Globe,
+  FlaskConical,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -43,28 +44,41 @@ import { PageGenerationResult, GenerationCandidate } from "@/lib/generation/sche
 import { InteractionSessionSummary } from "@/lib/interaction/schemas";
 import { AggregatedProductionEvidence } from "@/lib/production/schemas";
 import { ProductionEvidenceDashboard } from "./ProductionEvidenceDashboard";
+import { ExperimentDashboard } from "./ExperimentDashboard";
+import { CreateExperimentDialog } from "./CreateExperimentDialog";
+import { ExperimentEvaluationResult } from "@/lib/experiment/decisioning";
+import { evidenceIsStale } from "@/lib/review/workflow";
 
 interface OptimizationPanelProps {
   canonicalHtml: string;
   projectId?: string;
+  pageId?: string;
   currentRevision: number;
+  currentVersionId?: string;
   selectedId: string | null;
   onSelectNode: (nodeId: string | null) => void;
   viewport?: "desktop" | "tablet" | "mobile";
   onViewportChange?: (vp: "desktop" | "tablet" | "mobile") => void;
   analysis?: UXAnalysisResult | null;
   onAnalysisChange?: (analysis: UXAnalysisResult | null) => void;
-  onOptimizationResultReady?: (result: PageGenerationResult) => void;
+  onOptimizationResultReady?: (result: PageGenerationResult, findingIds: string[]) => void;
+  onWorkflowChange?: () => void;
   candidate?: GenerationCandidate | null;
   onApplyCandidate?: (candidate: GenerationCandidate) => void;
   onRejectCandidate?: (candidate: GenerationCandidate) => void;
   interactionSummary?: InteractionSessionSummary | null;
+  initialEvidenceMode?: "preview" | "production" | "experiment";
+  activeExperimentId?: string | null;
+  initialSelectedFindingIds?: string[];
+  onSelectedFindingsChange?: (ids: string[]) => void;
 }
 
 export function OptimizationPanel({
   canonicalHtml,
   projectId = "proj_default",
+  pageId = "page_landing",
   currentRevision,
+  currentVersionId,
   selectedId,
   onSelectNode,
   viewport: externalViewport,
@@ -76,6 +90,11 @@ export function OptimizationPanel({
   onApplyCandidate,
   onRejectCandidate,
   interactionSummary,
+  initialEvidenceMode,
+  activeExperimentId,
+  onWorkflowChange,
+  initialSelectedFindingIds,
+  onSelectedFindingsChange,
 }: OptimizationPanelProps) {
   const comparison: OptimizationComparison | undefined = useMemo(() => {
     if (!candidate) return undefined;
@@ -102,7 +121,25 @@ export function OptimizationPanel({
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [currentStage, setCurrentStage] = useState<UXAnalyzeStage | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [evidenceMode, setEvidenceMode] = useState<"preview" | "production">("preview");
+  const [evidenceMode, setEvidenceMode] = useState<"preview" | "production" | "experiment">(
+    initialEvidenceMode || "preview"
+  );
+  const [prevInitialMode, setPrevInitialMode] = useState(initialEvidenceMode);
+  if (initialEvidenceMode && initialEvidenceMode !== prevInitialMode) {
+    setPrevInitialMode(initialEvidenceMode);
+    setEvidenceMode(initialEvidenceMode);
+  }
+
+  const [isCreateExperimentOpen, setIsCreateExperimentOpen] = useState(false);
+  const [expRefreshTrigger, setExpRefreshTrigger] = useState(0);
+  const [lastCreatedExpId, setLastCreatedExpId] = useState<string | undefined>(activeExperimentId || undefined);
+  const [prevActiveExpId, setPrevActiveExpId] = useState(activeExperimentId);
+  if (activeExperimentId && activeExperimentId !== prevActiveExpId) {
+    setPrevActiveExpId(activeExperimentId);
+    setLastCreatedExpId(activeExperimentId);
+    setExpRefreshTrigger((prev) => prev + 1);
+  }
+
 
   // Filters
   const [selectedSeverity, setSelectedSeverity] = useState<UXSeverity | "all">(
@@ -120,28 +157,43 @@ export function OptimizationPanel({
   };
 
   // Selected findings for AI Optimization Candidate
-  const [selectedFindingIds, setSelectedFindingIds] = useState<Set<string>>(new Set());
+  const [selectedFindingIds, setSelectedFindingIds] = useState<Set<string>>(
+    () => new Set(initialSelectedFindingIds ?? [])
+  );
+  const isFirstFindingsRender = useRef(true);
+  useEffect(() => {
+    if (isFirstFindingsRender.current) {
+      isFirstFindingsRender.current = false;
+      return;
+    }
+    onSelectedFindingsChange?.(Array.from(selectedFindingIds));
+  }, [selectedFindingIds, onSelectedFindingsChange]);
 
   // Run UX Analysis with SSE
-  const handleAnalyze = useCallback(async (liveEvidenceToUse?: AggregatedProductionEvidence | null) => {
-    setIsAnalyzing(true);
-    setCurrentStage("Preparing document");
-    setErrorMessage(null);
+  const handleAnalyze = useCallback(
+    async (
+      liveEvidenceToUse?: AggregatedProductionEvidence | null,
+      experimentEvidenceToUse?: ExperimentEvaluationResult | null
+    ) => {
+      setIsAnalyzing(true);
+      setCurrentStage("Preparing document");
+      setErrorMessage(null);
 
-    try {
-      const response = await fetch("/api/optimization/analyze", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "text/event-stream",
-        },
-        body: JSON.stringify({
-          html: canonicalHtml,
-          viewport: selectedViewport,
-          revision: currentRevision,
-          liveEvidence: liveEvidenceToUse || undefined,
-        }),
-      });
+      try {
+        const response = await fetch("/api/optimization/analyze", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "text/event-stream",
+          },
+          body: JSON.stringify({
+            html: canonicalHtml,
+            viewport: selectedViewport,
+            revision: currentRevision,
+            liveEvidence: liveEvidenceToUse || undefined,
+            experimentEvidence: experimentEvidenceToUse || undefined,
+          }),
+        });
 
       if (!response.ok) {
         throw new Error(`Analysis request failed (${response.status})`);
@@ -201,18 +253,34 @@ export function OptimizationPanel({
 
   const handleCreateOptimizationFromLiveEvidence = useCallback(
     async (evidence: AggregatedProductionEvidence) => {
-      await handleAnalyze(evidence);
+      const targetVersionId = evidence.versionId === "all" ? currentVersionId : evidence.versionId;
+      if (!targetVersionId || targetVersionId !== currentVersionId || evidenceIsStale(evidence.lastSeenAt)) {
+        setErrorMessage("Production evidence is stale or belongs to another version. Restore that version or collect fresh evidence before using it.");
+        return;
+      }
+      await handleAnalyze({ ...evidence, versionId: currentVersionId ?? evidence.versionId });
     },
-    [handleAnalyze]
+    [handleAnalyze, currentVersionId]
+  );
+
+  const handleApplyExperimentEvidence = useCallback(
+    async (expEvaluation: ExperimentEvaluationResult) => {
+      if (![expEvaluation.control.versionId, expEvaluation.variant.versionId].includes(currentVersionId ?? "")) {
+        setErrorMessage("Experiment evidence belongs to other versions. Restore a tested version before using it.");
+        return;
+      }
+      await handleAnalyze(undefined, expEvaluation);
+    },
+    [handleAnalyze, currentVersionId]
   );
 
   // Is analysis stale?
   const isStale = useMemo(() => {
     return (
       analysis !== null &&
-      analysis.documentRevision !== currentRevision
+      (analysis.documentRevision !== currentRevision || analysis.viewport !== selectedViewport || evidenceIsStale(analysis.timestamp))
     );
-  }, [analysis, currentRevision]);
+  }, [analysis, currentRevision, selectedViewport]);
 
   const [userGoal, setUserGoal] = useState<string>("");
   const [isOptimizing, setIsOptimizing] = useState<boolean>(false);
@@ -322,7 +390,7 @@ export function OptimizationPanel({
             if (event.type === "status") {
               setOptimizingStage(event.stage);
             } else if (event.type === "result") {
-              onOptimizationResultReady?.(event.result);
+              onOptimizationResultReady?.(event.result, Array.from(selectedFindingIds));
             } else if (event.type === "error") {
               setErrorMessage(event.error);
             }
@@ -505,7 +573,7 @@ export function OptimizationPanel({
                       data-testid="comparison-score-delta"
                       className="text-sm font-extrabold text-zinc-900 dark:text-zinc-100"
                     >
-                      UX score: {comparison.baselineScore} → {comparison.candidateScore}{" "}
+                      Heuristic score: {comparison.baselineScore} → {comparison.candidateScore}{" "}
                       ({comparison.scoreDelta >= 0 ? `+${comparison.scoreDelta}` : comparison.scoreDelta})
                     </span>
                   </div>
@@ -814,7 +882,7 @@ export function OptimizationPanel({
               <div className="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
                 <div>
                   <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-500">
-                    UX Quality Score
+                    Heuristic checks (not proven UX improvement)
                   </span>
                   <div className="flex items-baseline gap-1 mt-0.5">
                     <span
@@ -1192,33 +1260,46 @@ export function OptimizationPanel({
             </div>
           )}
 
-          {/* ─── Evidence Modes: Simulated Preview vs Production Live ─── */}
+          {/* ─── Evidence Modes: Simulated Preview vs Production Live vs Experiment A/B ─── */}
           <div className="pt-2 border-t border-zinc-200 dark:border-zinc-800 space-y-2">
             <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-900 p-0.5 rounded-lg border border-zinc-200 dark:border-zinc-800 text-xs">
               <button
                 type="button"
                 onClick={() => setEvidenceMode("preview")}
                 data-testid="tab-evidence-preview"
-                className={`flex-1 py-1 px-2 rounded-md font-medium text-center transition-colors cursor-pointer ${
+                className={`flex-1 py-1 px-1.5 rounded-md font-medium text-center transition-colors cursor-pointer ${
                   evidenceMode === "preview"
                     ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-xs"
                     : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
                 }`}
               >
-                Simulated (Preview)
+                Preview
               </button>
               <button
                 type="button"
                 onClick={() => setEvidenceMode("production")}
                 data-testid="tab-evidence-production"
-                className={`flex-1 py-1 px-2 rounded-md font-medium text-center transition-colors flex items-center justify-center gap-1.5 cursor-pointer ${
+                className={`flex-1 py-1 px-1.5 rounded-md font-medium text-center transition-colors flex items-center justify-center gap-1 cursor-pointer ${
                   evidenceMode === "production"
                     ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-xs"
                     : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
                 }`}
               >
-                <Globe className="w-3 h-3 text-blue-500" />
-                <span>Production (Live)</span>
+                <Globe className="w-3 h-3 text-blue-500 shrink-0" />
+                <span>Production</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setEvidenceMode("experiment")}
+                data-testid="tab-evidence-experiment"
+                className={`flex-1 py-1 px-1.5 rounded-md font-medium text-center transition-colors flex items-center justify-center gap-1 cursor-pointer ${
+                  evidenceMode === "experiment"
+                    ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-xs"
+                    : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+                }`}
+              >
+                <FlaskConical className="w-3 h-3 text-purple-500 shrink-0" />
+                <span>A/B Test</span>
               </button>
             </div>
 
@@ -1234,7 +1315,7 @@ export function OptimizationPanel({
                   Switch to Preview mode to simulate user interactions.
                 </div>
               )
-            ) : (
+            ) : evidenceMode === "production" ? (
               <ProductionEvidenceDashboard
                 projectId={projectId}
                 onSelectNode={onSelectNode}
@@ -1242,10 +1323,33 @@ export function OptimizationPanel({
                 onCreateOptimizationFromLiveEvidence={handleCreateOptimizationFromLiveEvidence}
                 isCreatingOptimization={isAnalyzing}
               />
+            ) : (
+              <ExperimentDashboard
+                projectId={projectId}
+                onWorkflowChange={onWorkflowChange}
+                onOpenCreateExperiment={() => setIsCreateExperimentOpen(true)}
+                onApplyEvidenceToUXAnalyzer={handleApplyExperimentEvidence}
+                isApplyingEvidence={isAnalyzing}
+                refreshTrigger={expRefreshTrigger}
+                lastCreatedExperimentId={lastCreatedExpId}
+              />
             )}
           </div>
         </div>
       </ScrollArea>
+
+      <CreateExperimentDialog
+        isOpen={isCreateExperimentOpen}
+        onClose={() => setIsCreateExperimentOpen(false)}
+        projectId={projectId}
+        pageId={pageId}
+        onCreated={(exp) => {
+          onWorkflowChange?.();
+          setEvidenceMode("experiment");
+          setLastCreatedExpId(exp.id);
+          setExpRefreshTrigger((prev) => prev + 1);
+        }}
+      />
     </aside>
   );
 }

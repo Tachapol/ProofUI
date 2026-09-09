@@ -5,6 +5,15 @@ import {
   SessionDurationBucket,
 } from "./schemas";
 import { UXAnalysisViewport } from "../optimization/schemas";
+import {
+  UXExperiment,
+  CreateExperimentRequest,
+} from "../experiment/schemas";
+import {
+  RawVariantEvidence,
+  evaluateExperiment,
+  ExperimentEvaluationResult,
+} from "../experiment/decisioning";
 
 interface PublishedRecord {
   metadata: PublishedMetadata;
@@ -17,6 +26,15 @@ export class ProductionStore {
 
   // Map key: `${projectId}::${versionId}`
   private aggregatedEvidence: Map<string, AggregatedProductionEvidence> = new Map();
+
+  // Map key: `exp_${id}`
+  private experiments: Map<string, UXExperiment> = new Map();
+
+  // Map key: `${experimentId}::${variant}` (where variant is 'control' or 'variant')
+  private experimentEvidence: Map<string, RawVariantEvidence> = new Map();
+
+  // Map key: `${projectId}::${pageId}` -> currently active versionId
+  private activePublishedVersions: Map<string, string> = new Map();
 
   private makeKey(projectId: string, pageId: string, versionId: string): string {
     return `${projectId}::${pageId}::${versionId}`;
@@ -32,6 +50,7 @@ export class ProductionStore {
   public publishVersion(metadata: PublishedMetadata, html: string): void {
     const key = this.makeKey(metadata.projectId, metadata.pageId, metadata.versionId);
     this.publishedVersions.set(key, { metadata, html });
+    this.activePublishedVersions.set(`${metadata.projectId}::${metadata.pageId}`, metadata.versionId);
 
     // Initialize aggregated evidence entry if not yet created
     const evidenceKey = this.makeEvidenceKey(metadata.projectId, metadata.versionId);
@@ -106,6 +125,11 @@ export class ProductionStore {
   public recordTelemetry(payload: ProductionTelemetryPayload): boolean {
     if (!this.hasPublishedVersion(payload.projectId, payload.pageId, payload.versionId)) {
       return false;
+    }
+    if (payload.experimentId || payload.variantId) {
+      const exp = payload.experimentId ? this.experiments.get(payload.experimentId) : null;
+      if (!exp || !payload.variantId || exp.projectId !== payload.projectId || exp.pageId !== payload.pageId ||
+        payload.versionId !== (payload.variantId === "control" ? exp.controlVersionId : exp.variantVersionId)) return false;
     }
 
     const evidenceKey = this.makeEvidenceKey(payload.projectId, payload.versionId);
@@ -202,8 +226,192 @@ export class ProductionStore {
     }
     agg.lowInteractionImportantElements = lowInteraction.slice(0, 10);
 
+    // 8. Experiment isolated aggregation (if payload has experimentId & variantId)
+    if (payload.experimentId && payload.variantId) {
+      const exp = this.experiments.get(payload.experimentId);
+      if (exp && exp.status === "running") {
+        const expEvidenceKey = `${exp.id}::${payload.variantId}`;
+        let expEv = this.experimentEvidence.get(expEvidenceKey);
+        if (!expEv) {
+          expEv = {
+            sessions: 0,
+            ctaClicks: 0,
+            scroll100Count: 0,
+            goalConversions: 0,
+          };
+          this.experimentEvidence.set(expEvidenceKey, expEv);
+        }
+        // Freeze each arm at its predeclared quota to avoid optional stopping.
+        if (expEv.sessions >= Math.ceil(exp.minSampleSize / 2)) {
+          agg.lastSeenAt = new Date().toISOString();
+          return true;
+        }
+        expEv.sessions += 1;
+
+        let sessionCtaTotal = 0;
+        if (payload.ctaClicks) {
+          for (const count of Object.values(payload.ctaClicks)) {
+            sessionCtaTotal += count;
+          }
+        }
+        expEv.ctaClicks += sessionCtaTotal;
+
+        if (payload.scrollDepth.reached100) {
+          expEv.scroll100Count += 1;
+        }
+
+        // Determine goal conversion for this session
+        let isGoalConversion = false;
+        if (exp.goal.type === "cta_click") {
+          if (exp.goal.targetCtaId) {
+            if ((payload.ctaClicks?.[exp.goal.targetCtaId] || 0) > 0) {
+              isGoalConversion = true;
+            }
+          } else {
+            if (sessionCtaTotal > 0) {
+              isGoalConversion = true;
+            }
+          }
+        } else if (exp.goal.type === "scroll_completion") {
+          const thresh = exp.goal.thresholdScroll || 100;
+          if (thresh === 100 && payload.scrollDepth.reached100) isGoalConversion = true;
+          else if (thresh === 75 && payload.scrollDepth.reached75) isGoalConversion = true;
+          else if (thresh === 50 && payload.scrollDepth.reached50) isGoalConversion = true;
+          else if (thresh === 25 && payload.scrollDepth.reached25) isGoalConversion = true;
+        }
+
+        if (isGoalConversion) {
+          expEv.goalConversions += 1;
+        }
+      }
+    }
+
     agg.lastSeenAt = new Date().toISOString();
     return true;
+  }
+
+  /**
+   * Creates a new UX Experiment from two published versions.
+   */
+  public createExperiment(req: CreateExperimentRequest): UXExperiment {
+    if (!this.hasPublishedVersion(req.projectId, req.pageId, req.controlVersionId)) {
+      throw new Error(`Control version '${req.controlVersionId}' is not published for this project/page.`);
+    }
+    if (!this.hasPublishedVersion(req.projectId, req.pageId, req.variantVersionId)) {
+      throw new Error(`Variant version '${req.variantVersionId}' is not published for this project/page.`);
+    }
+
+    const id = `exp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const experiment: UXExperiment = {
+      id,
+      projectId: req.projectId,
+      pageId: req.pageId,
+      name: req.name,
+      controlVersionId: req.controlVersionId,
+      variantVersionId: req.variantVersionId,
+      status: "running",
+      goal: {
+        type: req.goal.type,
+        targetCtaId: req.goal.targetCtaId,
+        thresholdScroll: req.goal.thresholdScroll ?? 100,
+      },
+      trafficSplit: req.trafficSplit ?? 50,
+      minSampleSize: req.minSampleSize ?? 20,
+      confidenceThreshold: req.confidenceThreshold ?? 0.95,
+      startedAt: new Date().toISOString(),
+      endedAt: null,
+      promotedVersionId: null,
+    };
+
+    this.experiments.set(id, experiment);
+    this.experimentEvidence.set(`${id}::control`, {
+      sessions: 0,
+      ctaClicks: 0,
+      scroll100Count: 0,
+      goalConversions: 0,
+    });
+    this.experimentEvidence.set(`${id}::variant`, {
+      sessions: 0,
+      ctaClicks: 0,
+      scroll100Count: 0,
+      goalConversions: 0,
+    });
+
+    return experiment;
+  }
+
+  /**
+   * Retrieves an experiment by ID.
+   */
+  public getExperiment(id: string): UXExperiment | null {
+    return this.experiments.get(id) || null;
+  }
+
+  /**
+   * Retrieves all experiments for a project.
+   */
+  public getExperimentsForProject(projectId: string): UXExperiment[] {
+    const results: UXExperiment[] = [];
+    for (const exp of this.experiments.values()) {
+      if (exp.projectId === projectId) {
+        results.push({ ...exp });
+      }
+    }
+    return results;
+  }
+
+  /**
+   * Evaluates statistical decisioning for an experiment.
+   */
+  public getExperimentEvaluation(experimentId: string): ExperimentEvaluationResult | null {
+    const exp = this.experiments.get(experimentId);
+    if (!exp) return null;
+
+    const controlEv = this.experimentEvidence.get(`${exp.id}::control`) || {
+      sessions: 0,
+      ctaClicks: 0,
+      scroll100Count: 0,
+      goalConversions: 0,
+    };
+    const variantEv = this.experimentEvidence.get(`${exp.id}::variant`) || {
+      sessions: 0,
+      ctaClicks: 0,
+      scroll100Count: 0,
+      goalConversions: 0,
+    };
+
+    return evaluateExperiment(exp, controlEv, variantEv);
+  }
+
+  /**
+   * Promotes the winning version of an experiment to the active published version.
+   * Requires explicit confirmation.
+   */
+  public promoteWinner(experimentId: string, versionId: string): boolean {
+    const exp = this.experiments.get(experimentId);
+    if (!exp) return false;
+
+    if (versionId !== exp.controlVersionId && versionId !== exp.variantVersionId) {
+      throw new Error("Target versionId must match either control or variant version of this experiment.");
+    }
+    if (exp.status === "concluded") throw new Error("Experiment already concluded.");
+    if (this.getExperimentEvaluation(experimentId)?.recommendedWinner !== versionId) {
+      throw new Error("No statistically supported winner for this version. Result is inconclusive or insufficient data.");
+    }
+
+    exp.status = "concluded";
+    exp.endedAt = new Date().toISOString();
+    exp.promotedVersionId = versionId;
+
+    this.activePublishedVersions.set(`${exp.projectId}::${exp.pageId}`, versionId);
+    return true;
+  }
+
+  /**
+   * Returns the currently active published version for a project and page.
+   */
+  public getActivePublishedVersion(projectId: string, pageId: string): string | null {
+    return this.activePublishedVersions.get(`${projectId}::${pageId}`) || null;
   }
 
   /**
@@ -234,6 +442,9 @@ export class ProductionStore {
   public resetForTesting(): void {
     this.publishedVersions.clear();
     this.aggregatedEvidence.clear();
+    this.experiments.clear();
+    this.experimentEvidence.clear();
+    this.activePublishedVersions.clear();
   }
 }
 
@@ -245,6 +456,4 @@ declare global {
 export const productionStore: ProductionStore =
   globalThis.__proofui_production_store__ || new ProductionStore();
 
-if (process.env.NODE_ENV !== "production") {
-  globalThis.__proofui_production_store__ = productionStore;
-}
+globalThis.__proofui_production_store__ = productionStore;

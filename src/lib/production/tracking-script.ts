@@ -5,6 +5,8 @@ export interface GenerateTrackerOptions {
   pageId: string;
   versionId: string;
   endpointUrl?: string;
+  experimentId?: string;
+  variantId?: "control" | "variant";
 }
 
 /**
@@ -13,7 +15,14 @@ export interface GenerateTrackerOptions {
  * Collects strictly non-PII, privacy-safe interaction metrics.
  */
 export function generateProductionTrackerScript(options: GenerateTrackerOptions): string {
-  const { projectId, pageId, versionId, endpointUrl = "/api/production/telemetry" } = options;
+  const {
+    projectId,
+    pageId,
+    versionId,
+    endpointUrl = "/api/production/telemetry",
+    experimentId,
+    variantId,
+  } = options;
 
   // Safe JSON serialization of configuration
   const config = JSON.stringify({
@@ -22,6 +31,8 @@ export function generateProductionTrackerScript(options: GenerateTrackerOptions)
     versionId,
     endpointUrl,
     version: PROOFUI_TRACKER_VERSION,
+    ...(experimentId ? { experimentId } : {}),
+    ...(variantId ? { variantId } : {}),
   });
 
   return `
@@ -139,7 +150,9 @@ export function generateProductionTrackerScript(options: GenerateTrackerOptions)
       scrollDepth: scrollDepth,
       ctaClicks: ctaClicks,
       elementClicks: elementClicks,
-      trackerVersion: config.version
+      trackerVersion: config.version,
+      ...(config.experimentId ? { experimentId: config.experimentId } : {}),
+      ...(config.variantId ? { variantId: config.variantId } : {})
     };
 
     var body = JSON.stringify(payload);
@@ -181,13 +194,15 @@ export function injectPublishedMetadataAndTracker(
   html: string,
   options: GenerateTrackerOptions & { trackingEnabled: boolean; title?: string }
 ): string {
-  const { projectId, pageId, versionId, trackingEnabled } = options;
+  const { projectId, pageId, versionId, trackingEnabled, experimentId, variantId } = options;
 
   const metaTags = `
   <meta name="proofui-project-id" content="${projectId}">
   <meta name="proofui-page-id" content="${pageId}">
   <meta name="proofui-version-id" content="${versionId}">
   <meta name="proofui-tracking-enabled" content="${trackingEnabled ? "true" : "false"}">
+  ${experimentId ? `<meta name="proofui-experiment-id" content="${experimentId}">` : ""}
+  ${variantId ? `<meta name="proofui-variant-id" content="${variantId}">` : ""}
   `;
 
   let modifiedHtml = html;

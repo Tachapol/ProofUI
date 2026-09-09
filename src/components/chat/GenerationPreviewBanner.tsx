@@ -42,10 +42,10 @@ export function GenerationPreviewBanner({
             }`}
           >
             {candidate.optimizationComparison.scoreDelta > 0
-              ? `UX score: ${candidate.optimizationComparison.baselineScore} → ${candidate.optimizationComparison.candidateScore} (+${candidate.optimizationComparison.scoreDelta})`
+              ? `Heuristic score: ${candidate.optimizationComparison.baselineScore} → ${candidate.optimizationComparison.candidateScore} (+${candidate.optimizationComparison.scoreDelta})`
               : candidate.optimizationComparison.scoreDelta === 0
-              ? `UX score: ${candidate.optimizationComparison.baselineScore} (±0)`
-              : `UX score: ${candidate.optimizationComparison.baselineScore} → ${candidate.optimizationComparison.candidateScore} (${candidate.optimizationComparison.scoreDelta})`}
+              ? `Heuristic score: ${candidate.optimizationComparison.baselineScore} (±0)`
+              : `Heuristic score: ${candidate.optimizationComparison.baselineScore} → ${candidate.optimizationComparison.candidateScore} (${candidate.optimizationComparison.scoreDelta})`}
           </span>
         )}
       </div>

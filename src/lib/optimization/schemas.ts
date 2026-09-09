@@ -62,6 +62,7 @@ export const UXAnalyzeRequestSchema = z.object({
   viewport: UXAnalysisViewportSchema.default("desktop"),
   revision: z.number().int().default(1),
   liveEvidence: z.any().optional().nullable(),
+  experimentEvidence: z.any().optional().nullable(),
 });
 export type UXAnalyzeRequest = z.infer<typeof UXAnalyzeRequestSchema>;
 

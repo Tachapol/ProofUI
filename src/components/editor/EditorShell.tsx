@@ -57,7 +57,10 @@ import {
 } from "@/components/ui/dialog";
 import { ImportWebsiteDialog } from "@/components/import/ImportWebsiteDialog";
 import { PublishDialog } from "./PublishDialog";
+import { CreateExperimentDialog } from "./CreateExperimentDialog";
 import { useInteractionEvidence } from "@/lib/interaction/useInteractionEvidence";
+import { ProjectOverview } from "./ProjectOverview";
+import { ReviewState } from "@/lib/review/workflow";
 
 export function EditorShell() {
   // Stable editor session ID in parent
@@ -78,7 +81,6 @@ export function EditorShell() {
   } = useFrameDimensions(viewport);
   const [documentTree, setDocumentTree] = useState<SerializedNode | null>(null);
   const [rightSidebarTab, setRightSidebarTab] = useState<"properties" | "optimization">("properties");
-  const [uxAnalysis, setUxAnalysis] = useState<UXAnalysisResult | null>(null);
 
   // Interaction evidence tracking for preview mode
   const interactionEvidence = useInteractionEvidence(documentTree);
@@ -116,6 +118,10 @@ export function EditorShell() {
     }
     return null;
   }, []);
+  const [uxAnalysis, setUxAnalysis] = useState<UXAnalysisResult | null>(initialProject?.review?.analysis ?? null);
+  const [decisions, setDecisions] = useState<ReviewState["decisions"]>(initialProject?.review?.decisions ?? []);
+  const [selectedFindingIds, setSelectedFindingIds] = useState<string[]>(initialProject?.review?.selectedFindingIds ?? []);
+  const [reviewRefresh, setReviewRefresh] = useState(0);
 
   const [canonicalSource, setCanonicalSource] = useState<string>(() => {
     return initialProject?.document.source || getSampleTailwindDocument(sessionId);
@@ -177,9 +183,22 @@ export function EditorShell() {
   const [projectId] = useState("proj_default");
   const [pageId] = useState("page_landing");
 
+  // Experiment Dialog State
+  const [showCreateExperimentDialog, setShowCreateExperimentDialog] = useState(false);
+  const [expControlVersionId, setExpControlVersionId] = useState<string | undefined>(undefined);
+  const [expVariantVersionId, setExpVariantVersionId] = useState<string | undefined>(undefined);
+  const [activeExperimentId, setActiveExperimentId] = useState<string | null>(null);
+  const [optimizationEvidenceMode, setOptimizationEvidenceMode] = useState<"preview" | "production" | "experiment">("preview");
+
+  const handleOpenCreateExperiment = (controlId: string, variantId: string) => {
+    setExpControlVersionId(controlId);
+    setExpVariantVersionId(variantId);
+    setShowCreateExperimentDialog(true);
+  };
+
   // Generation Candidate Preview state
-  const [candidate, setCandidate] = useState<GenerationCandidate | null>(null);
-  const [candidatesMap, setCandidatesMap] = useState<Map<string, GenerationCandidate>>(new Map());
+  const [candidate, setCandidate] = useState<GenerationCandidate | null>(() => initialProject?.review?.candidates.find(c => c.result.id === initialProject.review?.activeCandidateId && c.status === "ready") ?? null);
+  const [candidatesMap, setCandidatesMap] = useState<Map<string, GenerationCandidate>>(() => new Map(initialProject?.review?.candidates.map(c => [c.result.id, c]) ?? []));
   const [isComparingOriginal, setIsComparingOriginal] = useState(false);
 
   // Chat Sidebar Resizable Panel Hook
@@ -246,54 +265,6 @@ export function EditorShell() {
     setCanUndo(historyManager.getCanUndo());
     setCanRedo(historyManager.getCanRedo());
   }, [historyManager]);
-
-  // Persist project changes
-  const persistProject = useCallback(
-    (customSource?: string, customRev?: number, customContext?: EditorDocumentContext) => {
-      if (typeof window === "undefined") return;
-      saveProjectToStorage({
-        schemaVersion: CURRENT_SCHEMA_VERSION,
-        document: {
-          source: customSource ?? canonicalSource,
-          revision: customRev ?? revision,
-          context: customContext ?? documentContext,
-        },
-        conversations: [],
-        messages: [],
-        versions,
-        activeConversationId: null,
-        sidebar: {
-          width: sidebarWidth,
-          isCollapsed: isSidebarCollapsed,
-        },
-        timestamp: Date.now(),
-      });
-      setSaveStatus("saved");
-    },
-    [
-      canonicalSource,
-      revision,
-      documentContext,
-      versions,
-      sidebarWidth,
-      isSidebarCollapsed,
-    ]
-  );
-
-  // Autosave scheduling
-  const scheduleAutosave = useCallback(
-    (sourceToSave?: string, revToSave?: number) => {
-      setSaveStatus("unsaved");
-      if (autosaveTimerRef.current) {
-        clearTimeout(autosaveTimerRef.current);
-      }
-      autosaveTimerRef.current = setTimeout(() => {
-        setSaveStatus("saving");
-        persistProject(sourceToSave, revToSave);
-      }, EDITOR_CONFIG.AUTOSAVE_DEBOUNCE_MS);
-    },
-    [persistProject]
-  );
 
   // AI Edit Submission Handler (called from Chat Workspace)
   const handlePerformAIEdit = useCallback(
@@ -371,11 +342,12 @@ export function EditorShell() {
     };
     setCandidate(newCandidate);
     setCandidatesMap((prev) => new Map(prev).set(result.id, newCandidate));
-  }, []);
+    setDecisions(prev => [...prev, { candidateId: result.id, baselineVersionId: versions.at(-1)?.id ?? "unversioned", analysis: null, selectedFindingIds: [], appliedVersionId: null }]);
+  }, [versions]);
 
   // Optimization candidate ready handler (immediately activates preview banner)
   const handleOptimizationCandidateReady = useCallback(
-    (result: PageGenerationResult) => {
+    (result: PageGenerationResult, selectedFindingIds: string[] = []) => {
       const comparison =
         result.optimizationComparison ||
         (result as { comparison?: OptimizationComparison }).comparison;
@@ -389,6 +361,7 @@ export function EditorShell() {
       };
       setCandidate(newCandidate);
       setCandidatesMap((prev) => new Map(prev).set(result.id, newCandidate));
+      setDecisions(prev => [...prev, { candidateId: result.id, baselineVersionId: versions.at(-1)?.id ?? "unversioned", analysis: uxAnalysis, selectedFindingIds, appliedVersionId: null }]);
       setIsComparingOriginal(false);
       sendToIframe({
         source: "visual-editor-parent",
@@ -400,7 +373,7 @@ export function EditorShell() {
         },
       });
     },
-    [sessionId, revision, sendToIframe]
+    [sessionId, revision, sendToIframe, versions, uxAnalysis]
   );
 
   // Chat Workspace Hook
@@ -426,6 +399,112 @@ export function EditorShell() {
     onGenerationResultReady: handleGenerationResultReady,
     documentRevision: revision,
   });
+
+  // Persist project changes
+  const persistProject = useCallback(
+    (customSource?: string, customRev?: number, customContext?: EditorDocumentContext) => {
+      if (typeof window === "undefined") return;
+      const saved = saveProjectToStorage({
+        schemaVersion: CURRENT_SCHEMA_VERSION,
+        document: {
+          source: customSource ?? canonicalSource,
+          revision: customRev ?? revision,
+          context: customContext ?? documentContext,
+        },
+        conversations,
+        messages,
+        versions,
+        activeConversationId: activeConversation?.id ?? null,
+        review: {
+          analysis: uxAnalysis,
+          decisions,
+          candidates: Array.from(candidatesMap.values()),
+          activeCandidateId: candidate?.result.id ?? null,
+          selectedFindingIds,
+        },
+        sidebar: {
+          width: sidebarWidth,
+          isCollapsed: isSidebarCollapsed,
+        },
+        timestamp: Date.now(),
+      });
+      setSaveStatus(saved ? "saved" : "unsaved");
+    },
+    [
+      canonicalSource,
+      revision,
+      documentContext,
+      conversations,
+      messages,
+      versions,
+      activeConversation?.id,
+      uxAnalysis,
+      decisions,
+      candidatesMap,
+      candidate,
+      selectedFindingIds,
+      sidebarWidth,
+      isSidebarCollapsed,
+    ]
+  );
+
+  // Autosave scheduling
+  const scheduleAutosave = useCallback(
+    (sourceToSave?: string, revToSave?: number) => {
+      setSaveStatus("unsaved");
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+      }
+      autosaveTimerRef.current = setTimeout(() => {
+        setSaveStatus("saving");
+        persistProject(sourceToSave, revToSave);
+      }, EDITOR_CONFIG.AUTOSAVE_DEBOUNCE_MS);
+    },
+    [persistProject]
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    saveProjectToStorage({
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      document: {
+        source: canonicalSource,
+        revision,
+        context: documentContext,
+      },
+      conversations,
+      messages,
+      versions,
+      activeConversationId: activeConversation?.id ?? null,
+      review: {
+        analysis: uxAnalysis,
+        decisions,
+        candidates: Array.from(candidatesMap.values()),
+        activeCandidateId: candidate?.result.id ?? null,
+        selectedFindingIds,
+      },
+      sidebar: {
+        width: sidebarWidth,
+        isCollapsed: isSidebarCollapsed,
+      },
+      timestamp: Date.now(),
+    });
+  }, [
+    canonicalSource,
+    revision,
+    documentContext,
+    conversations,
+    messages,
+    versions,
+    activeConversation?.id,
+    uxAnalysis,
+    decisions,
+    candidatesMap,
+    candidate,
+    selectedFindingIds,
+    sidebarWidth,
+    isSidebarCollapsed,
+  ]);
 
   // Active candidate with automatic stale detection
   const activeCandidate = useMemo(() => {
@@ -490,7 +569,7 @@ export function EditorShell() {
   // Apply Candidate Generation atomically
   const handleApplyCandidate = useCallback(
     (cand: GenerationCandidate) => {
-      if (cand.status === "stale") return;
+      if (cand.status !== "ready" || cand.result.basedOnRevision !== revision) return;
 
       const nextRev = revision + 1;
       setCanonicalSource(cand.sanitizedHtml);
@@ -503,12 +582,13 @@ export function EditorShell() {
       );
       updateHistoryState();
 
-      addVersion({
+      const appliedVersion = addVersion({
         source: "ai-generation",
         revision: nextRev,
         htmlReference: cand.sanitizedHtml,
         summary: cand.result.summary,
       });
+      setDecisions(prev => prev.map(d => d.candidateId === cand.result.id ? { ...d, appliedVersionId: appliedVersion.id } : d));
 
       addTimelineEvent("generation-applied", `Applied generation: "${cand.result.summary}"`);
 
@@ -549,8 +629,9 @@ export function EditorShell() {
       if (candidate?.result.id === cand.result.id) {
         handleExitPreview();
       }
+      scheduleAutosave();
     },
-    [candidate, handleExitPreview]
+    [candidate, handleExitPreview, scheduleAutosave]
   );
 
   // Apply Accepted AI Proposal atomically
@@ -1179,6 +1260,22 @@ export function EditorShell() {
         isOptimizationActive={!isRightSidebarCollapsed && rightSidebarTab === "optimization"}
       />
 
+      <ProjectOverview
+        projectId={projectId} pageId={pageId} versions={versions} revision={revision}
+        review={{ analysis: uxAnalysis, decisions, candidates: Array.from(candidatesMap.values()), activeCandidateId: candidate?.result.id ?? null, selectedFindingIds }}
+        candidate={activeCandidate} previewEvents={interactionEvidence.summary?.totalEvents ?? 0}
+        refreshTrigger={reviewRefresh}
+        onAction={(action, experimentId) => {
+          if (action === "generate") { if (isSidebarCollapsed) toggleSidebarCollapse(); return; }
+          if (action === "publish") { setShowPublishDialog(true); return; }
+          if (action === "experiment") { setShowCreateExperimentDialog(true); return; }
+          setRightSidebarTab("optimization");
+          if (isRightSidebarCollapsed) toggleRightSidebarCollapse();
+          setOptimizationEvidenceMode(action === "review" ? "experiment" : "preview");
+          if (experimentId) setActiveExperimentId(experimentId);
+          if (action === "compare" && candidate) handlePreviewCandidate(candidate);
+        }}
+      />
       {/* Editor Body */}
       <div className="flex-1 flex overflow-hidden">
         {/* Chat Sidebar: Left persistent sidebar */}
@@ -1396,7 +1493,9 @@ export function EditorShell() {
                       <OptimizationPanel
                         canonicalHtml={canonicalSource}
                         projectId={projectId}
+                        pageId={pageId}
                         currentRevision={revision}
+                        currentVersionId={versions.find(v => v.revision === revision)?.id}
                         selectedId={selectedId}
                         onSelectNode={handleSelectNode}
                         viewport={viewport}
@@ -1408,6 +1507,11 @@ export function EditorShell() {
                         onApplyCandidate={handleApplyCandidate}
                         onRejectCandidate={handleRejectCandidate}
                         interactionSummary={interactionEvidence.summary}
+                        initialEvidenceMode={optimizationEvidenceMode}
+                        activeExperimentId={activeExperimentId}
+                        initialSelectedFindingIds={selectedFindingIds}
+                        onSelectedFindingsChange={setSelectedFindingIds}
+                        onWorkflowChange={() => setReviewRefresh(n => n + 1)}
                       />
                     )}
                   </div>
@@ -1442,6 +1546,24 @@ export function EditorShell() {
         versions={versions}
         currentRevision={revision}
         onRestoreVersion={handleRestoreVersion}
+        onCreateExperiment={handleOpenCreateExperiment}
+      />
+
+      {/* Create Experiment Dialog */}
+      <CreateExperimentDialog
+        isOpen={showCreateExperimentDialog}
+        onClose={() => setShowCreateExperimentDialog(false)}
+        projectId={projectId}
+        pageId={pageId}
+        initialControlVersionId={expControlVersionId}
+        initialVariantVersionId={expVariantVersionId}
+        onCreated={(exp) => {
+          setReviewRefresh(n => n + 1);
+          if (isRightSidebarCollapsed) toggleRightSidebarCollapse();
+          setRightSidebarTab("optimization");
+          setOptimizationEvidenceMode("experiment");
+          setActiveExperimentId(exp.id);
+        }}
       />
 
       {/* Discard Unapplied Code Changes Confirmation Dialog */}
@@ -1492,6 +1614,7 @@ export function EditorShell() {
 
       {/* Publish and Deploy Dialog */}
       <PublishDialog
+        key={`${showPublishDialog}-${revision}`}
         open={showPublishDialog}
         onOpenChange={setShowPublishDialog}
         canonicalHtml={canonicalSource}
@@ -1499,6 +1622,7 @@ export function EditorShell() {
         versions={versions}
         projectId={projectId}
         pageId={pageId}
+        onPublished={() => setReviewRefresh(n => n + 1)}
       />
     </div>
   );
