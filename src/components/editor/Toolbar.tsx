@@ -67,6 +67,7 @@ interface ToolbarProps {
   user?: { id: string; email: string; name: string } | null;
   onOpenAuth?: () => void;
   onLogout?: () => void;
+  onOpenWelcome?: () => void;
   onResetDocument: () => void;
   onOpenAIComposer: () => void;
   onOpenImportDialog: () => void;
@@ -109,6 +110,7 @@ export function Toolbar({
   user,
   onOpenAuth,
   onLogout,
+  onOpenWelcome,
   onResetDocument,
   onOpenAIComposer,
   onOpenImportDialog,
@@ -133,12 +135,17 @@ export function Toolbar({
     <header className="h-13 border-b border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-950/95 backdrop-blur px-4 flex items-center justify-between text-sm select-none z-30 shrink-0 transition-colors">
       {/* Brand & Left Actions (Mode Switcher, Undo / Redo) */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2 font-bold tracking-tight text-zinc-900 dark:text-zinc-100 mr-1">
+        <button
+          type="button"
+          onClick={onOpenWelcome}
+          className="flex items-center gap-2 font-bold tracking-tight text-zinc-900 dark:text-zinc-100 mr-1 hover:opacity-80 transition-opacity cursor-pointer text-left"
+          title="Return to Welcome Landing Page"
+        >
           <span className="w-6 h-6 rounded-md bg-zinc-900 dark:bg-zinc-100 flex items-center justify-center text-white dark:text-zinc-900 text-xs shadow-xs">
             <Layers className="w-3.5 h-3.5" />
           </span>
-          <span className="hidden sm:inline text-xs font-semibold">Visual HTML Editor</span>
-        </div>
+          <span className="hidden sm:inline text-xs font-semibold">ProofUI</span>
+        </button>
 
         {/* Project Switcher Trigger */}
         {onOpenDashboard && (

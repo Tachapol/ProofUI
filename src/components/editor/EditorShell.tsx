@@ -66,7 +66,7 @@ import { ProjectDashboardDialog } from "@/components/dashboard/ProjectDashboardD
 import { AuthDialog } from "@/components/auth/AuthDialog";
 import { AlertCircle, RefreshCw } from "lucide-react";
 
-export function EditorShell() {
+export function EditorShell({ onOpenWelcome }: { onOpenWelcome?: () => void } = {}) {
   // Stable editor session ID in parent
   const [sessionId] = useState("proof-editor-session");
 
@@ -1323,6 +1323,7 @@ export function EditorShell() {
           setCurrentUser(null);
           setIsCloudSynced(false);
         }}
+        onOpenWelcome={onOpenWelcome}
         onResetDocument={handleResetDocument}
         onOpenAIComposer={() => {
           const willOpen = isSidebarCollapsed;

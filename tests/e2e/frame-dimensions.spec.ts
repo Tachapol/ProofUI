@@ -62,6 +62,7 @@ test.describe("Custom Frame Dimensions and Pixel Resizing", () => {
     await heightInput.fill("850");
     await expect(dimensionBadge).toContainText("1200 × 850 px");
 
+    await expect(frameContainer).toHaveCSS("width", "1200px");
     const updatedBox = await frameContainer.boundingBox();
     expect(Math.round(updatedBox!.width)).toBe(1200);
     expect(Math.round(updatedBox!.height)).toBe(850);

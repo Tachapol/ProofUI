@@ -13,6 +13,21 @@ export default defineConfig({
   use: {
     baseURL: playwrightBaseUrl,
     trace: "on-first-retry",
+    storageState: {
+      cookies: [
+        {
+          name: "proofui_e2e",
+          value: "true",
+          domain: "localhost",
+          path: "/",
+          expires: -1,
+          httpOnly: false,
+          secure: false,
+          sameSite: "Lax",
+        },
+      ],
+      origins: [],
+    },
   },
   projects: [
     {
