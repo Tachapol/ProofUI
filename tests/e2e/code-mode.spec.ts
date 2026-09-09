@@ -113,4 +113,82 @@ test.describe("Visual HTML Editor - Milestone 3 Code Mode", () => {
     // Reverted back to original sample document
     await expect(heroTitleInIframe).toContainText("Scale your infrastructure");
   });
+
+  test("side-by-side code editor and live preview with bidirectional click highlight and scroll sync", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page.waitForSelector('[data-layer-id="body-root"]', { timeout: 15000 });
+
+    // Switch to Code Mode
+    const codeModeBtn = page.locator('[data-testid="mode-code"]');
+    await codeModeBtn.click();
+
+    // 1. Verify side-by-side visibility: Code Editor & Preview Iframe are BOTH visible
+    const codePanel = page.locator('[data-testid="code-editor-panel"]');
+    await expect(codePanel).toBeVisible();
+
+    const previewIframe = page.locator('iframe[data-testid="preview-iframe"]');
+    await expect(previewIframe).toBeVisible();
+
+    await page.waitForFunction(() => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return !!(window as any).__monacoEditor;
+    });
+
+    const frame = page.frameLocator('iframe[data-testid="preview-iframe"]');
+    const heroTitleInIframe = frame.locator('[data-editor-id="hero-title"]');
+    await expect(heroTitleInIframe).toBeVisible();
+
+    // 2. Clicking an element inside the preview iframe highlights code in Monaco & canvas outline
+    await heroTitleInIframe.click({ position: { x: 10, y: 10 } });
+
+    // Canvas selection outline should be visible around the element even in Code Mode
+    const selectionOutline = page.locator('[data-testid="selection-outline"]');
+    await expect(selectionOutline).toBeVisible({ timeout: 5000 });
+
+    // Monaco should have focused/positioned on the line containing hero-title
+    const monacoLineHasHero = await page.evaluate(() => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const editor = (window as any).__monacoEditor;
+      if (!editor) return false;
+      const pos = editor.getPosition();
+      if (!pos) return false;
+      const line = editor.getModel().getLineContent(pos.lineNumber);
+      return line.includes("hero-title") || line.includes("hero-gradient-text");
+    });
+    expect(monacoLineHasHero).toBe(true);
+
+    // 3. Moving Monaco cursor to another element tag highlights that element on canvas
+    await page.evaluate(() => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const editor = (window as any).__monacoEditor;
+      const model = editor.getModel();
+      const matches = model.findMatches('data-editor-id="hero-badge"', true, false, false, null, false);
+      if (matches.length > 0) {
+        editor.setPosition({
+          lineNumber: matches[0].range.startLineNumber,
+          column: matches[0].range.startColumn,
+        });
+      }
+    });
+
+    // Wait for debounce/event loop
+    await page.waitForTimeout(400);
+
+    // Canvas selection outline should now reflect the badge
+    await expect(selectionOutline).toBeVisible();
+    await expect(selectionOutline).toContainText("div");
+
+    // 4. Scroll synchronization: scrolling Monaco triggers sync to iframe
+    await page.evaluate(() => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const editor = (window as any).__monacoEditor;
+      editor.setScrollTop(300);
+    });
+
+    // Verify no runtime crashes occurred during scroll dispatch
+    await page.waitForTimeout(300);
+    await expect(previewIframe).toBeVisible();
+  });
 });

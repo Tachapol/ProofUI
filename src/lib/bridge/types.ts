@@ -112,8 +112,26 @@ export const IframeToParentMessageSchema = z.discriminatedUnion("type", [
     type: z.literal("HEATMAP_DATA_REPORT"),
     payload: z.lazy(() => HeatmapDataReportPayloadSchema),
   }),
+  z.object({
+    source: z.literal("visual-editor-iframe"),
+    type: z.literal("IFRAME_SCROLLED"),
+    payload: z.lazy(() => IframeScrolledPayloadSchema),
+  }),
 ]);
 export type IframeToParentMessage = z.infer<typeof IframeToParentMessageSchema>;
+
+export const IframeScrolledPayloadSchema = z.object({
+  sessionId: z.string(),
+  scrollPercentage: z.number(),
+  topVisibleId: z.string().optional(),
+});
+export type IframeScrolledPayload = z.infer<typeof IframeScrolledPayloadSchema>;
+
+export const SyncScrollToIframePayloadSchema = z.object({
+  sessionId: z.string(),
+  scrollPercentage: z.number(),
+});
+export type SyncScrollToIframePayload = z.infer<typeof SyncScrollToIframePayloadSchema>;
 
 export const MeasuredHeatmapNodeSchema = z.object({
   id: z.string(),
@@ -219,6 +237,11 @@ export const ParentToIframeMessageSchema = z.discriminatedUnion("type", [
     source: z.literal("visual-editor-parent"),
     type: z.literal("REQUEST_HEATMAP_DATA"),
     payload: RequestHeatmapDataPayloadSchema,
+  }),
+  z.object({
+    source: z.literal("visual-editor-parent"),
+    type: z.literal("SYNC_SCROLL_TO_IFRAME"),
+    payload: SyncScrollToIframePayloadSchema,
   }),
 ]);
 export type ParentToIframeMessage = z.infer<typeof ParentToIframeMessageSchema>;

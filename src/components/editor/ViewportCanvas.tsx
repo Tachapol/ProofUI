@@ -167,8 +167,8 @@ export function ViewportCanvas({
             />
           )}
 
-          {/* Parent-Rendered Hover & Selection Overlay Layer (Design Mode only) */}
-          {editorMode === "design" && (
+          {/* Parent-Rendered Hover & Selection Overlay Layer (Design & Code Mode) */}
+          {(editorMode === "design" || editorMode === "code") && (
             <div
               className="absolute inset-0 pointer-events-none overflow-hidden"
               data-testid="selection-overlay-container"

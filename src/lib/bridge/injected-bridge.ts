@@ -528,8 +528,28 @@ export function getInjectedBridgeScript(sessionId = "editor-session"): string {
       }
     } else if (data.type === 'REQUEST_HEATMAP_DATA') {
       collectHeatmapData();
+    } else if (data.type === 'SYNC_SCROLL_TO_IFRAME') {
+      var pct = data.payload ? data.payload.scrollPercentage : 0;
+      var maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+      isSyncingScroll = true;
+      window.scrollTo({ top: pct * maxScroll, behavior: 'auto' });
+      setTimeout(function() { isSyncingScroll = false; }, 60);
     }
   });
+
+  var isSyncingScroll = false;
+  var scrollReportTimer = null;
+  window.addEventListener('scroll', function() {
+    if (isSyncingScroll) return;
+    if (scrollReportTimer) clearTimeout(scrollReportTimer);
+    scrollReportTimer = setTimeout(function() {
+      var maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+      var pct = Math.min(1, Math.max(0, window.scrollY / maxScroll));
+      postToParent('IFRAME_SCROLLED', {
+        scrollPercentage: pct
+      });
+    }, 40);
+  }, { passive: true });
 
   function isInteractiveElement(el) {
     if (!el) return false;

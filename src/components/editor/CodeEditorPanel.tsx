@@ -14,6 +14,10 @@ interface CodeEditorPanelProps {
   onApplyCodeChanges: (reconciledHtml: string) => void;
   onDraftChange?: (hasUnappliedChanges: boolean) => void;
   theme?: "light" | "dark";
+  selectedId?: string | null;
+  onCursorNodeChange?: (nodeId: string | null) => void;
+  onCodeScroll?: (scrollPercentage: number) => void;
+  externalScrollPercentage?: number | null;
 }
 
 export function CodeEditorPanel({
@@ -22,6 +26,10 @@ export function CodeEditorPanel({
   onApplyCodeChanges,
   onDraftChange,
   theme = "dark",
+  selectedId,
+  onCursorNodeChange,
+  onCodeScroll,
+  externalScrollPercentage,
 }: CodeEditorPanelProps) {
   const formattedCanonicalSource = useMemo(
     () => formatHtml(canonicalSource),
@@ -51,6 +59,72 @@ export function CodeEditorPanel({
   const monacoRef = useRef<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const editorInstanceRef = useRef<any>(null);
+  const isExternalScrollingRef = useRef(false);
+
+  // Sync scroll from external preview
+  useEffect(() => {
+    if (externalScrollPercentage === undefined || externalScrollPercentage === null) return;
+    const editor = editorInstanceRef.current;
+    if (!editor) return;
+
+    const scrollHeight = editor.getScrollHeight();
+    const layoutInfo = editor.getLayoutInfo();
+    const clientHeight = layoutInfo ? layoutInfo.height : 600;
+    const maxScroll = scrollHeight - clientHeight;
+    if (maxScroll > 0) {
+      isExternalScrollingRef.current = true;
+      editor.setScrollTop(externalScrollPercentage * maxScroll);
+      setTimeout(() => {
+        isExternalScrollingRef.current = false;
+      }, 60);
+    }
+  }, [externalScrollPercentage]);
+
+  // Reveal and highlight line in Monaco when selectedId changes from preview
+  useEffect(() => {
+    if (!selectedId) return;
+    const editor = editorInstanceRef.current;
+    const monaco = monacoRef.current;
+    if (!editor || !monaco) return;
+
+    const model = editor.getModel();
+    if (!model) return;
+
+    const matches = model.findMatches(
+      `data-editor-id="${selectedId}"`,
+      true,
+      false,
+      false,
+      null,
+      false
+    );
+
+    if (matches && matches.length > 0) {
+      const match = matches[0];
+      editor.revealLineInCenter(match.range.startLineNumber);
+      editor.setPosition({
+        lineNumber: match.range.startLineNumber,
+        column: match.range.startColumn,
+      });
+
+      const decorations = [
+        {
+          range: new monaco.Range(
+            match.range.startLineNumber,
+            1,
+            match.range.startLineNumber,
+            model.getLineMaxColumn(match.range.startLineNumber)
+          ),
+          options: {
+            isWholeLine: true,
+            className: "bg-indigo-500/20 border-l-2 border-indigo-500",
+            linesDecorationsClassName: "bg-indigo-500 w-1",
+          },
+        },
+      ];
+      editor.createDecorationsCollection(decorations);
+    }
+  }, [selectedId]);
 
   // Notify parent of unapplied changes status
   useEffect(() => {
@@ -110,6 +184,44 @@ export function CodeEditorPanel({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (window as any).__monacoEditor = editor;
     }
+
+    // Listen to cursor position to highlight node in preview
+    editor.onDidChangeCursorPosition((e) => {
+      const model = editor.getModel();
+      if (!model) return;
+      const lineContent = model.getLineContent(e.position.lineNumber);
+      const match = lineContent.match(/data-editor-id="([^"]+)"/);
+      if (match) {
+        onCursorNodeChange?.(match[1]);
+      } else {
+        // Search upward within 12 lines for enclosing opening tag
+        let foundId: string | null = null;
+        for (let l = e.position.lineNumber; l >= Math.max(1, e.position.lineNumber - 12); l--) {
+          const content = model.getLineContent(l);
+          const m = content.match(/<[a-zA-Z0-9-]+[^>]*data-editor-id="([^"]+)"/);
+          if (m) {
+            foundId = m[1];
+            break;
+          }
+        }
+        if (foundId) {
+          onCursorNodeChange?.(foundId);
+        }
+      }
+    });
+
+    // Listen to scroll changes in Monaco to sync to preview iframe
+    editor.onDidScrollChange((e) => {
+      if (isExternalScrollingRef.current) return;
+      const layout = editor.getLayoutInfo();
+      const clientHeight = layout ? layout.height : 600;
+      const maxScroll = e.scrollHeight - clientHeight;
+      if (maxScroll > 0) {
+        const pct = Math.min(1, Math.max(0, e.scrollTop / maxScroll));
+        onCodeScroll?.(pct);
+      }
+    });
+
     runValidation(draftState.value);
   };
 
