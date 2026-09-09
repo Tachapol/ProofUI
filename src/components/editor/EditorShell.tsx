@@ -287,7 +287,7 @@ export function EditorShell({ onOpenWelcome }: { onOpenWelcome?: () => void } = 
     defaultWidth: 320,
     minWidth: 260,
     maxWidth: 640,
-    defaultCollapsed: true,
+    defaultCollapsed: false,
     side: "right",
   });
 
@@ -1539,6 +1539,7 @@ export function EditorShell({ onOpenWelcome }: { onOpenWelcome?: () => void } = 
                 hoveredRect={hoveredRect}
                 hoveredTagName={hoveredTagName}
                 hoveredId={hoveredId}
+                selectionPathNodes={selectionPathNodes}
                 onIframeLoad={handleIframeLoad}
                 editorMode={editorMode}
                 frameWidth={frameWidth}

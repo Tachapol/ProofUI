@@ -740,14 +740,33 @@ export function PropertiesPanel({
           <Sliders className="w-3.5 h-3.5 text-zinc-500" />
           <span>Properties</span>
         </div>
-        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center text-zinc-500 text-xs">
-          <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center text-zinc-400 mb-3">
-            <Sliders className="w-5 h-5" />
+        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center text-zinc-500 text-xs overflow-y-auto">
+          <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/80 dark:border-indigo-900/80 flex items-center justify-center text-indigo-600 dark:text-indigo-400 mb-3 shadow-xs">
+            <Sliders className="w-6 h-6" />
           </div>
-          <p className="font-medium text-zinc-700 dark:text-zinc-300 mb-1">No Element Selected</p>
-          <p className="text-[11px] text-zinc-500 leading-relaxed max-w-[200px]">
-            Click on any element in the canvas or layers tree to inspect and edit its properties.
+          <p className="font-semibold text-zinc-900 dark:text-zinc-100 mb-1">No Element Selected</p>
+          <p className="text-[11px] text-zinc-500 leading-relaxed max-w-[220px] mb-5">
+            Click on any element in the canvas or layers tree to edit its styles, typography, and layout.
           </p>
+
+          {/* Helpful Quick Tips Card */}
+          <div className="w-full max-w-[240px] bg-zinc-50 dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800/80 rounded-xl p-3 text-left space-y-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block mb-1">
+              Canvas Shortcuts
+            </span>
+            <div className="flex items-start gap-2 text-[11px] text-zinc-600 dark:text-zinc-400">
+              <span className="font-mono text-indigo-500 text-xs font-bold">1</span>
+              <span><strong>Click</strong> to select and inspect classes</span>
+            </div>
+            <div className="flex items-start gap-2 text-[11px] text-zinc-600 dark:text-zinc-400">
+              <span className="font-mono text-indigo-500 text-xs font-bold">2</span>
+              <span><strong>Double-click</strong> text to edit in place</span>
+            </div>
+            <div className="flex items-start gap-2 text-[11px] text-zinc-600 dark:text-zinc-400">
+              <span className="font-mono text-indigo-500 text-xs font-bold">3</span>
+              <span>Drag handles to resize canvas</span>
+            </div>
+          </div>
         </div>
       </aside>
     );

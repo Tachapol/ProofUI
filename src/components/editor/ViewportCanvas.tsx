@@ -1,7 +1,7 @@
 "use client";
 
 import React, { RefObject } from "react";
-import { DOMRectData, MeasuredHeatmapNode } from "@/lib/bridge/types";
+import { DOMRectData, MeasuredHeatmapNode, SerializedNode } from "@/lib/bridge/types";
 import { VIEWPORT_PRESETS, ViewportMode } from "@/lib/editor/constants";
 import { AggregatedProductionEvidence } from "@/lib/production/schemas";
 import { HeatmapCanvasOverlay, HeatmapMode } from "./HeatmapCanvasOverlay";
@@ -16,6 +16,7 @@ interface ViewportCanvasProps {
   hoveredRect: DOMRectData | null;
   hoveredTagName: string | null;
   hoveredId: string | null;
+  selectionPathNodes?: SerializedNode[];
   onIframeLoad?: () => void;
   editorMode?: "preview" | "design" | "code";
   frameWidth?: number;
@@ -46,6 +47,7 @@ export function ViewportCanvas({
   hoveredRect,
   hoveredTagName,
   hoveredId,
+  selectionPathNodes = [],
   onIframeLoad,
   editorMode = "design",
   frameWidth,
@@ -261,6 +263,76 @@ export function ViewportCanvas({
           <div className="w-2.5 h-2.5 rounded-br-sm border-r-2 border-b-2 border-zinc-400 dark:border-zinc-500 group-hover:border-indigo-500 transition-colors" />
         </div>
       </div>
+
+      {/* Floating Canvas Footer / Breadcrumb Status Bar (Design Mode) */}
+      {editorMode === "design" && (
+        <div
+          data-testid="canvas-bottom-statusbar"
+          className="fixed bottom-3 left-1/2 -translate-x-1/2 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-zinc-200/90 dark:border-zinc-800/90 shadow-xl flex items-center gap-3 text-xs z-30 select-none max-w-[90vw] transition-all"
+        >
+          {selectedId && selectedTagName ? (
+            <div className="flex items-center gap-1.5 overflow-hidden">
+              <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider bg-indigo-50 dark:bg-indigo-950/60 px-1.5 py-0.5 rounded">
+                &lt;{selectedTagName}&gt;
+              </span>
+              <div className="flex items-center gap-1 text-zinc-600 dark:text-zinc-300 font-mono text-[11px] overflow-x-auto max-w-[320px] scrollbar-none">
+                {selectionPathNodes && selectionPathNodes.length > 0 ? (
+                  selectionPathNodes.map((node, index, arr) => (
+                    <React.Fragment key={node.id}>
+                      <button
+                        type="button"
+                        onClick={() => onSelectNode?.(node.id)}
+                        className={`hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer ${
+                          node.id === selectedId
+                            ? "font-bold text-zinc-900 dark:text-zinc-100 underline decoration-indigo-500"
+                            : "opacity-75 hover:opacity-100"
+                        }`}
+                      >
+                        {node.tagName}
+                      </button>
+                      {index < arr.length - 1 && (
+                        <span className="text-zinc-400 dark:text-zinc-600 text-[10px]">›</span>
+                      )}
+                    </React.Fragment>
+                  ))
+                ) : (
+                  <span>{selectedId}</span>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => onSelectNode?.(null)}
+                title="Deselect element"
+                className="w-4 h-4 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 flex items-center justify-center cursor-pointer ml-1 text-xs font-bold"
+              >
+                ×
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400 text-[11px]">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Click element to inspect styles • Double-click text to edit inline</span>
+            </div>
+          )}
+
+          <div className="w-px h-3.5 bg-zinc-200 dark:bg-zinc-800 hidden sm:block" />
+
+          {/* Quick preset resolution indicator */}
+          <div className="hidden sm:flex items-center gap-1.5 font-mono text-[11px] text-zinc-400">
+            <span>{activeWidth} × {activeHeight}px</span>
+            {onResetFrameSize && (
+              <button
+                type="button"
+                onClick={onResetFrameSize}
+                className="hover:text-zinc-700 dark:hover:text-zinc-200 hover:underline cursor-pointer ml-0.5"
+                title="Reset to default preset size"
+              >
+                (reset)
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </main>
   );
 }

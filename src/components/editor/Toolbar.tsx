@@ -449,86 +449,47 @@ export function Toolbar({
         </div>
       )}
 
-      {/* Right Actions: Import, Ask AI, Selection breadcrumb, Theme Switcher, Reset */}
+      {/* Right Actions: Evidence Suite, Ask AI, Project Tools, Selection Tag, Theme, User */}
       <div className="flex items-center gap-2">
-        {/* Import Website Action */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onOpenImportDialog}
-          data-testid="toolbar-btn-import"
-          className="gap-1.5 font-medium"
-        >
-          <Globe className="w-3.5 h-3.5" />
-          <span className="hidden md:inline">Import</span>
-        </Button>
+        {/* Evidence Suite: UX Analyzer & Heatmap Overlay */}
+        {(onOpenOptimization || onToggleHeatmap) && (
+          <div className="flex items-center bg-zinc-100 dark:bg-zinc-900 rounded-lg p-0.5 border border-zinc-200 dark:border-zinc-800">
+            {onOpenOptimization && (
+              <Button
+                variant={isOptimizationActive ? "default" : "ghost"}
+                size="sm"
+                onClick={onOpenOptimization}
+                data-testid="toolbar-btn-analyze-ux"
+                className={`h-7 px-2.5 text-xs font-medium rounded-md gap-1.5 transition-colors cursor-pointer ${
+                  isOptimizationActive
+                    ? "bg-indigo-600 text-white shadow-xs hover:bg-indigo-700"
+                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+                }`}
+                title="Analyze UX Quality & Accessibility Heuristics"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span className="hidden md:inline">Analyze UX</span>
+              </Button>
+            )}
 
-        {/* Version History Trigger */}
-        {onOpenVersionHistory && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onOpenVersionHistory}
-            data-testid="toolbar-btn-history"
-            className="gap-1.5 font-medium"
-            title="View Document Version History"
-          >
-            <History className="w-3.5 h-3.5" />
-            <span className="hidden md:inline">History</span>
-          </Button>
-        )}
-
-        {/* Analyze UX Trigger */}
-        {onOpenOptimization && (
-          <Button
-            variant={isOptimizationActive ? "default" : "outline"}
-            size="sm"
-            onClick={onOpenOptimization}
-            data-testid="toolbar-btn-analyze-ux"
-            className={
-              isOptimizationActive
-                ? "gap-1.5 font-medium bg-indigo-600 text-white hover:bg-indigo-700 shadow-xs"
-                : "gap-1.5 font-medium border-indigo-200 dark:border-indigo-900 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950"
-            }
-            title="Analyze UX Quality & Accessibility"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span className="hidden md:inline">Analyze UX</span>
-          </Button>
-        )}
-
-        {/* Heatmap & Attention Trigger */}
-        {onToggleHeatmap && (
-          <Button
-            variant={isHeatmapActive ? "default" : "outline"}
-            size="sm"
-            onClick={onToggleHeatmap}
-            data-testid="toolbar-btn-heatmap"
-            className={
-              isHeatmapActive
-                ? "gap-1.5 font-medium bg-amber-500 text-zinc-950 hover:bg-amber-400 font-bold shadow-xs"
-                : "gap-1.5 font-medium border-amber-300 dark:border-amber-800 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950"
-            }
-            title="Toggle Attention & Click Heatmap Overlay"
-          >
-            <Flame className="w-3.5 h-3.5" />
-            <span className="hidden md:inline">Heatmap</span>
-          </Button>
-        )}
-
-        {/* Publish & Deploy Trigger */}
-        {onOpenPublish && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onOpenPublish}
-            data-testid="toolbar-btn-publish"
-            className="gap-1.5 font-medium border-emerald-200 dark:border-emerald-900 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950"
-            title="Publish & Deploy Document"
-          >
-            <Rocket className="w-3.5 h-3.5" />
-            <span className="hidden md:inline">Publish</span>
-          </Button>
+            {onToggleHeatmap && (
+              <Button
+                variant={isHeatmapActive ? "default" : "ghost"}
+                size="sm"
+                onClick={onToggleHeatmap}
+                data-testid="toolbar-btn-heatmap"
+                className={`h-7 px-2.5 text-xs font-medium rounded-md gap-1.5 transition-colors cursor-pointer ${
+                  isHeatmapActive
+                    ? "bg-amber-500 text-zinc-950 font-bold shadow-xs hover:bg-amber-400"
+                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+                }`}
+                title="Toggle Attention & Click Heatmap Overlay"
+              >
+                <Flame className="w-3.5 h-3.5 text-amber-500" />
+                <span className="hidden md:inline">Heatmap</span>
+              </Button>
+            )}
+          </div>
         )}
 
         {/* Ask AI Trigger */}
@@ -539,47 +500,72 @@ export function Toolbar({
           data-testid="toolbar-btn-ask-ai"
           className={
             isAIActive
-              ? "gap-1.5 font-medium bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 shadow-xs"
-              : "gap-1.5 font-medium border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-900"
+              ? "gap-1.5 h-7 font-medium bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 shadow-xs"
+              : "gap-1.5 h-7 font-medium border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-900"
           }
           title={isAIActive ? "Close AI Assistant" : "Ask AI Assistant"}
         >
-          <Sparkles className="w-3.5 h-3.5" />
+          <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
           <span>Ask AI</span>
         </Button>
 
-        {selectedId && editorMode === "design" ? (
-          <div className="flex items-center gap-1.5">
-            <div className="hidden xl:flex items-center gap-1 text-xs text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-900 px-2 py-1 rounded-md border border-zinc-200 dark:border-zinc-800 max-w-[200px] overflow-hidden text-ellipsis whitespace-nowrap">
-              {selectionPathNodes.slice(-3).map((node, index, arr) => (
-                <React.Fragment key={node.id}>
-                  <button
-                    type="button"
-                    onClick={() => onSelectNode(node.id)}
-                    className="hover:text-zinc-900 dark:hover:text-zinc-100 font-mono text-[11px] transition-colors cursor-pointer"
-                  >
-                    {node.tagName}
-                  </button>
-                  {index < arr.length - 1 && (
-                    <ChevronRight className="w-3 h-3 text-zinc-400 dark:text-zinc-600 shrink-0" />
-                  )}
-                </React.Fragment>
-              ))}
-            </div>
+        {/* Project Utilities: Import, History, Publish */}
+        <div className="flex items-center gap-1 border-l border-zinc-200 dark:border-zinc-800 pl-1.5">
+          {onOpenImportDialog && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onOpenImportDialog}
+              data-testid="toolbar-btn-import"
+              className="h-7 w-7 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+              title="Import Website from URL"
+            >
+              <Globe className="w-3.5 h-3.5" />
+            </Button>
+          )}
 
-            <Badge variant="tag" className="gap-1 px-2 py-0.5">
-              <span className="font-bold uppercase">&lt;{selectedTagName}&gt;</span>
-              <button
-                type="button"
-                onClick={() => onSelectNode(null)}
-                aria-label="Clear selection"
-                className="hover:text-zinc-900 dark:hover:text-zinc-100 ml-0.5 text-zinc-500 rounded p-0.5 transition-colors cursor-pointer"
-              >
-                <X className="w-2.5 h-2.5" />
-              </button>
-            </Badge>
-          </div>
-        ) : null}
+          {onOpenVersionHistory && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onOpenVersionHistory}
+              data-testid="toolbar-btn-history"
+              className="h-7 w-7 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+              title="View Document Version History"
+            >
+              <History className="w-3.5 h-3.5" />
+            </Button>
+          )}
+
+          {onOpenPublish && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onOpenPublish}
+              data-testid="toolbar-btn-publish"
+              className="h-7 gap-1.5 font-medium border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/50"
+              title="Publish & Deploy Document"
+            >
+              <Rocket className="w-3.5 h-3.5" />
+              <span className="hidden lg:inline">Publish</span>
+            </Button>
+          )}
+        </div>
+
+        {/* Compact Element Tag Badge (Design Mode) */}
+        {selectedId && editorMode === "design" && selectedTagName && (
+          <Badge variant="tag" className="hidden 2xl:flex items-center gap-1 px-2 py-0.5 h-6 text-[10px]">
+            <span className="font-bold uppercase">&lt;{selectedTagName}&gt;</span>
+            <button
+              type="button"
+              onClick={() => onSelectNode(null)}
+              aria-label="Clear selection"
+              className="hover:text-zinc-900 dark:hover:text-zinc-100 ml-0.5 text-zinc-500 rounded p-0.5 cursor-pointer"
+            >
+              <X className="w-2.5 h-2.5" />
+            </button>
+          </Badge>
+        )}
 
         {/* User Account Menu / Sign In */}
         {onOpenAuth && (
