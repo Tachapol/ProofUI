@@ -44,7 +44,7 @@ interface ChatSidebarProps {
     scope: "new_page" | "new_version",
     attachments: ChatAttachment[],
     generationContext: PageGenerationRequest["context"],
-    provider: "qwen" | "gemini" | "mock"
+    provider: "vertex" | "qwen" | "gemini" | "mock"
   ) => Promise<void>;
   onCancel: () => void;
 }

@@ -65,12 +65,15 @@ test.describe("Milestone 5.6: Closed-Loop Review & MVP Validation E2E", () => {
     const nextActionBtn = page.locator('[data-testid="next-action"]');
     await expect(nextActionBtn).toBeVisible();
 
+    // Technical evidence stays behind a compact Project health disclosure.
+    await page.locator('[data-testid="project-health-toggle"]').click();
+
     // Verify heuristic labeling requirement
     const decisionHistory = page.locator('[data-testid="decision-history"]');
     await expect(decisionHistory).toContainText("Automated scores are heuristic checks, not proven UX improvement");
     await expect(decisionHistory).toContainText("Preview/test events are separate");
 
-    // Open decision history details to make refresh button visible and test failed request state
+    // Open version activity to make refresh available and test failed request state
     const decisionHistorySummary = page.locator('[data-testid="decision-history"] summary');
     await decisionHistorySummary.click();
 
@@ -90,7 +93,7 @@ test.describe("Milestone 5.6: Closed-Loop Review & MVP Validation E2E", () => {
     await refreshReviewBtn.click();
     const alertError = page.locator('[data-testid="project-overview"] [role="alert"]');
     await expect(alertError).toBeVisible({ timeout: 5000 });
-    await expect(alertError).toContainText("Review request failed (500)");
+    await expect(alertError).toContainText("Live results are temporarily unavailable");
 
     // Recover from failed request state
     failReview = false;

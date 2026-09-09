@@ -64,9 +64,11 @@ test.describe("Panel Docking, Collapsing and Resizing (Layers, Ask AI, Right Sid
     const headerCollapseBtn = page.locator('[data-testid="right-sidebar-collapse-btn"]');
     const toolbarAnalyzeBtn = page.locator('[data-testid="toolbar-btn-analyze-ux"]');
 
-    // 1. Initially Right Sidebar is open
+    // 1. Initially collapsed so the canvas gets the maximum working area.
+    await expect(rightSidebar).toBeHidden();
+    await expect(rightSidebarCollapsedRail).toBeVisible();
+    await page.locator('[data-testid="right-sidebar-expand-properties-btn"]').click();
     await expect(rightSidebar).toBeVisible();
-    await expect(rightSidebarCollapsedRail).toBeHidden();
 
     // 2. Resize right sidebar wider (dragging left handle to the left increases width)
     const resizer = page.locator('[data-testid="right-sidebar-resizer"]');

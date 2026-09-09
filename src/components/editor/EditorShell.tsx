@@ -205,7 +205,7 @@ export function EditorShell() {
   const {
     width: sidebarWidth,
     isCollapsed: isSidebarCollapsed,
-    toggleCollapse: toggleSidebarCollapse,
+    setIsCollapsed: setIsSidebarCollapsed,
     handleMouseDown: handleSidebarMouseDown,
     handleKeyDown: handleSidebarKeyDown,
   } = useResizablePanel({
@@ -219,7 +219,7 @@ export function EditorShell() {
   const {
     width: layersWidth,
     isCollapsed: isLayersCollapsed,
-    toggleCollapse: toggleLayersCollapse,
+    setIsCollapsed: setIsLayersCollapsed,
     handleMouseDown: handleLayersMouseDown,
     handleKeyDown: handleLayersKeyDown,
   } = useResizablePanel({
@@ -235,6 +235,7 @@ export function EditorShell() {
   const {
     width: rightSidebarWidth,
     isCollapsed: isRightSidebarCollapsed,
+    setIsCollapsed: setIsRightSidebarCollapsed,
     toggleCollapse: toggleRightSidebarCollapse,
     handleMouseDown: handleRightSidebarMouseDown,
     handleKeyDown: handleRightSidebarKeyDown,
@@ -243,7 +244,7 @@ export function EditorShell() {
     defaultWidth: 320,
     minWidth: 260,
     maxWidth: 640,
-    defaultCollapsed: false,
+    defaultCollapsed: true,
     side: "right",
   });
 
@@ -1239,20 +1240,27 @@ export function EditorShell() {
         saveStatus={saveStatus}
         onResetDocument={handleResetDocument}
         onOpenAIComposer={() => {
-          toggleSidebarCollapse();
+          const willOpen = isSidebarCollapsed;
+          setIsSidebarCollapsed(!isSidebarCollapsed);
+          if (willOpen) setIsLayersCollapsed(true);
         }}
         isAIActive={!isSidebarCollapsed}
-        onToggleLayers={toggleLayersCollapse}
+        onToggleLayers={() => {
+          const willOpen = isLayersCollapsed;
+          setIsLayersCollapsed(!isLayersCollapsed);
+          if (willOpen) setIsSidebarCollapsed(true);
+        }}
         isLayersActive={!isLayersCollapsed}
         onOpenImportDialog={() => setShowImportDialog(true)}
         onOpenVersionHistory={() => setShowVersionHistoryDialog(true)}
         onOpenPublish={() => setShowPublishDialog(true)}
         onOpenOptimization={() => {
+          setIsSidebarCollapsed(true);
           if (isRightSidebarCollapsed) {
             setRightSidebarTab("optimization");
-            toggleRightSidebarCollapse();
+            setIsRightSidebarCollapsed(false);
           } else if (rightSidebarTab === "optimization") {
-            toggleRightSidebarCollapse();
+            setIsRightSidebarCollapsed(true);
           } else {
             setRightSidebarTab("optimization");
           }
@@ -1266,11 +1274,16 @@ export function EditorShell() {
         candidate={activeCandidate} previewEvents={interactionEvidence.summary?.totalEvents ?? 0}
         refreshTrigger={reviewRefresh}
         onAction={(action, experimentId) => {
-          if (action === "generate") { if (isSidebarCollapsed) toggleSidebarCollapse(); return; }
+          if (action === "generate") {
+            setIsLayersCollapsed(true);
+            setIsSidebarCollapsed(false);
+            return;
+          }
           if (action === "publish") { setShowPublishDialog(true); return; }
           if (action === "experiment") { setShowCreateExperimentDialog(true); return; }
           setRightSidebarTab("optimization");
-          if (isRightSidebarCollapsed) toggleRightSidebarCollapse();
+          setIsSidebarCollapsed(true);
+          setIsRightSidebarCollapsed(false);
           setOptimizationEvidenceMode(action === "review" ? "experiment" : "preview");
           if (experimentId) setActiveExperimentId(experimentId);
           if (action === "compare" && candidate) handlePreviewCandidate(candidate);
@@ -1282,7 +1295,11 @@ export function EditorShell() {
         <ChatSidebar
           width={sidebarWidth}
           isCollapsed={isSidebarCollapsed}
-          onToggleCollapse={toggleSidebarCollapse}
+          onToggleCollapse={() => {
+            const willOpen = isSidebarCollapsed;
+            setIsSidebarCollapsed(!isSidebarCollapsed);
+            if (willOpen) setIsLayersCollapsed(true);
+          }}
           onMouseDownResize={handleSidebarMouseDown}
           onKeyDownResize={handleSidebarKeyDown}
           conversations={conversations}
@@ -1342,7 +1359,11 @@ export function EditorShell() {
                 onHoverNode={handleHoverNode}
                 width={layersWidth}
                 isCollapsed={isLayersCollapsed}
-                onToggleCollapse={toggleLayersCollapse}
+                onToggleCollapse={() => {
+                  const willOpen = isLayersCollapsed;
+                  setIsLayersCollapsed(!isLayersCollapsed);
+                  if (willOpen) setIsSidebarCollapsed(true);
+                }}
                 onMouseDownResize={handleLayersMouseDown}
                 onKeyDownResize={handleLayersKeyDown}
               />

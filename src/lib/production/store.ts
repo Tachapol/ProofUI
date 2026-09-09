@@ -453,7 +453,14 @@ declare global {
   var __proofui_production_store__: ProductionStore | undefined;
 }
 
+// During Next.js HMR an instance created by an older class shape can survive a
+// module update. Reuse it only when it implements the current review contract;
+// otherwise API routes would call missing methods and return 500 until restart.
+const cachedProductionStore = globalThis.__proofui_production_store__;
 export const productionStore: ProductionStore =
-  globalThis.__proofui_production_store__ || new ProductionStore();
+  cachedProductionStore &&
+  typeof cachedProductionStore.getActivePublishedVersion === "function"
+    ? cachedProductionStore
+    : new ProductionStore();
 
 globalThis.__proofui_production_store__ = productionStore;

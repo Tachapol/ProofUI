@@ -8,13 +8,13 @@ test.describe("Custom Frame Dimensions and Pixel Resizing", () => {
     await page.waitForSelector('[data-layer-id="body-root"]', { timeout: 15000 });
   });
 
-  test("proves desktop default 1044 x 1024, stepper buttons, direct inputs, and drag resizing", async ({
+  test("proves desktop default 1440 x 1024, stepper buttons, direct inputs, and drag resizing", async ({
     page,
   }) => {
-    // 1. Verify Frame Dimension indicator on Top Bar defaults to 1044 × 1024 px
+    // 1. Verify Frame Dimension indicator on Top Bar defaults to 1440 × 1024 px
     const dimensionBadge = page.locator('[data-testid="frame-dimension-indicator"]');
     await expect(dimensionBadge).toBeVisible();
-    await expect(dimensionBadge).toContainText("1044 × 1024 px");
+    await expect(dimensionBadge).toContainText("1440 × 1024 px");
 
     // 2. Verify Frame container style and bounding box
     const frameContainer = page.locator('[data-testid="viewport-frame-container"]');
@@ -22,13 +22,13 @@ test.describe("Custom Frame Dimensions and Pixel Resizing", () => {
 
     const initialBox = await frameContainer.boundingBox();
     expect(initialBox).not.toBeNull();
-    expect(Math.round(initialBox!.width)).toBe(1044);
+    expect(Math.round(initialBox!.width)).toBe(1440);
     expect(Math.round(initialBox!.height)).toBe(1024);
 
     // 3. Verify Toolbar inputs match
     const widthInput = page.locator('[data-testid="frame-width-input"]');
     const heightInput = page.locator('[data-testid="frame-height-input"]');
-    await expect(widthInput).toHaveValue("1044");
+    await expect(widthInput).toHaveValue("1440");
     await expect(heightInput).toHaveValue("1024");
 
     // 4. Test Increment / Decrement Steppers (+ and -)
@@ -39,17 +39,17 @@ test.describe("Custom Frame Dimensions and Pixel Resizing", () => {
 
     // Increase width by 1px
     await increaseWidthBtn.click();
-    await expect(widthInput).toHaveValue("1045");
-    await expect(dimensionBadge).toContainText("1045 × 1024 px");
+    await expect(widthInput).toHaveValue("1441");
+    await expect(dimensionBadge).toContainText("1441 × 1024 px");
 
     // Decrease width by 1px
     await decreaseWidthBtn.click();
-    await expect(widthInput).toHaveValue("1044");
+    await expect(widthInput).toHaveValue("1440");
 
     // Increase height by 1px
     await increaseHeightBtn.click();
     await expect(heightInput).toHaveValue("1025");
-    await expect(dimensionBadge).toContainText("1044 × 1025 px");
+    await expect(dimensionBadge).toContainText("1440 × 1025 px");
 
     // Decrease height by 1px
     await decreaseHeightBtn.click();
@@ -71,9 +71,9 @@ test.describe("Custom Frame Dimensions and Pixel Resizing", () => {
     await expect(resetBtn).toBeVisible();
     await resetBtn.click();
 
-    await expect(widthInput).toHaveValue("1044");
+    await expect(widthInput).toHaveValue("1440");
     await expect(heightInput).toHaveValue("1024");
-    await expect(dimensionBadge).toContainText("1044 × 1024 px");
+    await expect(dimensionBadge).toContainText("1440 × 1024 px");
 
     // 7. Test Drag Resize Handle on the right edge
     // Collapse right sidebar so 768px tablet canvas has plenty of unobstructed space in 1280px browser window

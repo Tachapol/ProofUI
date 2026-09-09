@@ -254,7 +254,7 @@ export function useChatWorkspace({
       scope: "new_page" | "new_version",
       attachments: ChatAttachment[] = [],
       generationContext: PageGenerationRequest["context"],
-      provider: "qwen" | "gemini" | "mock" = "qwen"
+      provider: "vertex" | "qwen" | "gemini" | "mock" = "vertex"
     ) => {
       if (!instruction.trim() || isProcessing) return;
 

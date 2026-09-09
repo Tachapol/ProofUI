@@ -32,7 +32,7 @@ interface ChatComposerProps {
     instruction: string,
     scope: "new_page" | "new_version",
     attachments: ChatAttachment[],
-    provider: "qwen" | "gemini" | "mock"
+    provider: "vertex" | "qwen" | "gemini" | "mock"
   ) => Promise<void>;
   onCancel: () => void;
   initialPrompt?: string;
@@ -56,13 +56,16 @@ export function ChatComposer({
   );
   const [generateScope] = useState<"new_page" | "new_version">("new_version");
   const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
-  const [selectedProvider, setSelectedProvider] = useState<"qwen" | "gemini" | "mock">("gemini");
+  const [selectedProvider, setSelectedProvider] = useState<"vertex" | "qwen" | "gemini" | "mock">("vertex");
   const [isProviderDropdownOpen, setIsProviderDropdownOpen] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const quickPrompts = selectedNode
+    ? ["Improve this element", "Make it more accessible", "Refine spacing and hierarchy"]
+    : ["Create a landing page", "Improve the current page", "Make this page responsive"];
 
   useEffect(() => {
     if (!isProcessing) return;
@@ -262,12 +265,30 @@ export function ChatComposer({
 
       {/* Textarea Input */}
       <div className="relative">
+        {!instruction && !isProcessing && (
+          <div className="mb-2 flex flex-wrap gap-1.5" data-testid="ai-quick-prompts">
+            {quickPrompts.map((prompt) => (
+              <button
+                key={prompt}
+                type="button"
+                onClick={() => {
+                  setMode(selectedNode ? "edit" : "generate");
+                  setInstruction(prompt);
+                  requestAnimationFrame(() => textareaRef.current?.focus());
+                }}
+                className="rounded-full border border-zinc-800 bg-zinc-900/70 px-2.5 py-1 text-[11px] text-zinc-400 transition-colors hover:border-zinc-700 hover:text-white"
+              >
+                {prompt}
+              </button>
+            ))}
+          </div>
+        )}
         <textarea
           ref={textareaRef}
           value={instruction}
           onChange={(e) => setInstruction(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask for revisions..."
+          placeholder={selectedNode ? `Describe how to change <${selectedNode.tagName}>…` : "Describe the page you want to create…"}
           data-testid="ai-instruction-input"
           rows={3}
           disabled={isProcessing}
@@ -336,15 +357,16 @@ export function ChatComposer({
               onClick={() => setIsProviderDropdownOpen((prev) => !prev)}
               className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-zinc-900/90 border border-zinc-800 hover:bg-zinc-800 hover:text-white transition-colors text-zinc-300 text-xs font-medium cursor-pointer"
             >
-              <span>{selectedProvider === "qwen" ? "Qwen" : selectedProvider === "gemini" ? "Gemini" : "Mock"}</span>
+              <span>{selectedProvider === "vertex" ? "Vertex Gemini" : selectedProvider === "qwen" ? "Qwen" : selectedProvider === "gemini" ? "Gemini API" : "Mock"}</span>
               <ChevronDown className="w-3 h-3 text-zinc-400 shrink-0" />
             </button>
 
             {isProviderDropdownOpen && (
               <div className="absolute left-0 bottom-full mb-1.5 w-44 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl z-50 p-1 flex flex-col gap-0.5">
                 {[
+                  { value: "vertex" as const, label: "Vertex Gemini" },
                   { value: "qwen" as const, label: "Qwen" },
-                  { value: "gemini" as const, label: "Gemini" },
+                  { value: "gemini" as const, label: "Gemini API" },
                   { value: "mock" as const, label: "Mock Tailwind Engine" },
                 ].map((option) => (
                   <button

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { AlertTriangle, CheckCircle2, ChevronDown, Sparkles } from "lucide-react";
 import { DocumentVersion, GenerationCandidate } from "@/lib/generation/schemas";
 import { ReviewState, evidenceIsStale, nextReviewAction } from "@/lib/review/workflow";
 import { PublishedMetadata, AggregatedProductionEvidence } from "@/lib/production/schemas";
@@ -15,7 +16,7 @@ interface OverviewData {
   evidence: AggregatedProductionEvidence[];
   experiments: { experiment: UXExperiment; evaluation: ExperimentEvaluationResult | null }[];
 }
-const labels = { generate: "Generate a page", analyze: "Analyze current version", optimize: "Select findings to optimize", compare: "Compare candidate", publish: "Publish applied version", experiment: "Create experiment", review: "Review experiment" };
+const labels = { generate: "Create with AI", analyze: "Check UX", optimize: "Improve issues", compare: "Review changes", publish: "Publish", experiment: "Run experiment", review: "View results" };
 
 export function ProjectOverview({ projectId, pageId, versions, revision, review, candidate, previewEvents, refreshTrigger, onAction }: {
   projectId: string; pageId: string; versions: DocumentVersion[]; revision: number;
@@ -27,6 +28,7 @@ export function ProjectOverview({ projectId, pageId, versions, revision, review,
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refresh, setRefresh] = useState(0);
+  const [isExpanded, setIsExpanded] = useState(false);
   useEffect(() => {
     const controller = new AbortController();
     async function fetchOverview() {
@@ -63,19 +65,51 @@ export function ProjectOverview({ projectId, pageId, versions, revision, review,
     publishedCount: data?.published.length ?? 0, experiment: !!currentExperiment,
   });
 
-  return <section data-testid="project-overview" suppressHydrationWarning className="shrink-0 border-b border-border bg-background px-4 py-2 text-xs space-y-2">
-    <div className="flex items-center justify-between gap-3" suppressHydrationWarning>
-      <div suppressHydrationWarning><strong>Project overview</strong> · Current: {current ? `${current.id} (Rev ${revision})` : `Unversioned edits (Rev ${revision})`}</div>
-      <Button size="sm" data-testid="next-action" disabled={loading || !!error} onClick={() => onAction(action, currentExperiment?.experiment.id)}>Next action: {labels[action]}</Button>
+  const currentLabel = current ? `Version ${revision}` : `Unsaved changes · Version ${revision}`;
+  const healthLabel = error ? "Status needs attention" : loading ? "Checking status…" : "Project health";
+
+  return <section data-testid="project-overview" suppressHydrationWarning className="shrink-0 border-b border-border bg-background text-xs">
+    <div className="min-h-12 px-4 py-2 flex items-center justify-between gap-3" suppressHydrationWarning>
+      <div className="flex min-w-0 items-center gap-2.5">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-indigo-500/10 text-indigo-500">
+          <Sparkles className="h-3.5 w-3.5" />
+        </span>
+        <div className="min-w-0">
+          <p className="truncate font-medium text-foreground">{currentLabel}</p>
+          <p className="truncate text-muted-foreground">
+            {review.analysis
+              ? staleAnalysis
+                ? "UX check is out of date"
+                : `${review.analysis.findings.length} UX issue${review.analysis.findings.length === 1 ? "" : "s"} found`
+              : "Ready to check and improve"}
+          </p>
+        </div>
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        <Button
+          size="sm"
+          variant="ghost"
+          data-testid="project-health-toggle"
+          aria-expanded={isExpanded}
+          onClick={() => setIsExpanded(value => !value)}
+          className={error ? "gap-1.5 text-amber-600 dark:text-amber-400" : "gap-1.5 text-muted-foreground"}
+        >
+          {error ? <AlertTriangle className="h-3.5 w-3.5" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+          <span className="hidden sm:inline">{healthLabel}</span>
+          <ChevronDown className={`h-3.5 w-3.5 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+        </Button>
+        <Button size="sm" data-testid="next-action" disabled={loading} onClick={() => onAction(action, currentExperiment?.experiment.id)}>{labels[action]}</Button>
+      </div>
     </div>
-    <div className="flex flex-wrap gap-x-5 gap-y-1 text-muted-foreground" aria-live="polite">
+    <div className={isExpanded ? "border-t border-border px-4 py-3 space-y-3" : "hidden"} data-testid="project-health-details">
+    <div className="grid gap-2 text-muted-foreground sm:grid-cols-2 xl:grid-cols-4" aria-live="polite">
       <span data-testid="overview-analysis">{review.analysis ? `Heuristic checks: ${review.analysis.score}/100 · ${staleAnalysis ? "Stale — analyze again" : `${review.analysis.findings.length} findings`}` : "No analysis yet"}</span>
-      <span>Preview/test: {previewEvents} local events · excluded from production</span>
+      <span>{previewEvents ? `Preview activity: ${previewEvents} local events` : "No preview activity yet"}</span>
       <span data-testid="overview-live">
         {loading
           ? "Loading live evidence…"
           : error
-          ? "Live evidence unavailable (stale)"
+          ? "Live results could not be refreshed"
           : !data?.activeVersionId
           ? "Not published"
           : isCurrentActive
@@ -84,13 +118,13 @@ export function ProjectOverview({ projectId, pageId, versions, revision, review,
           ? `Production: ${data.activeVersionId} active · Current ${current!.id} inactive (${currentSessions} sessions)`
           : `Production: ${data.activeVersionId} active · Current version not published`}
       </span>
-      <span data-testid="overview-experiment">{loading ? "Loading experiments…" : error ? "Experiment status unavailable" : currentExperiment ? `Experiment: ${currentExperiment.experiment.status} · ${currentExperiment.evaluation?.winner.replaceAll("_", " ") ?? "inconclusive"}` : "No experiment for current version"}</span>
+      <span data-testid="overview-experiment">{loading ? "Loading experiments…" : error ? "Experiment status could not be refreshed" : currentExperiment ? `Experiment: ${currentExperiment.experiment.status} · ${currentExperiment.evaluation?.winner.replaceAll("_", " ") ?? "inconclusive"}` : "No experiment running"}</span>
     </div>
-    {error && <p role="alert">{error} Last successful snapshot is not current evidence.</p>}
+    {error && <div role="alert" className="flex items-center justify-between gap-3 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-amber-700 dark:text-amber-300"><span>Live results are temporarily unavailable. Your editing tools still work.</span><Button size="sm" variant="outline" data-testid="refresh-review" disabled={loading} onClick={() => setRefresh(n => n + 1)}>Try again</Button></div>}
     <details data-testid="decision-history" className="max-h-64 overflow-auto">
-      <summary className="cursor-pointer">Decision history · {review.decisions.length} candidates</summary>
+      <summary className="cursor-pointer font-medium">Version activity · {review.decisions.length} decision{review.decisions.length === 1 ? "" : "s"}</summary>
       <p className="my-2 text-muted-foreground">Automated scores are heuristic checks, not proven UX improvement. Production conversion uses converted sessions / admitted sessions; Preview/test events are separate. Review one fixed sample before any explicit promotion.</p>
-      <Button size="sm" variant="outline" data-testid="refresh-review" disabled={loading} onClick={() => setRefresh(n => n + 1)}>{loading ? "Loading…" : error ? "Retry review" : "Refresh live review"}</Button>
+      {!error && <Button size="sm" variant="outline" data-testid="refresh-review" disabled={loading} onClick={() => setRefresh(n => n + 1)}>{loading ? "Checking…" : "Refresh status"}</Button>}
       {!review.decisions.length && <p className="py-2">No decisions yet. Generate a page or analyze the current document.</p>}
       {review.decisions.map(decision => {
         const item = review.candidates.find(c => c.result.id === decision.candidateId);
@@ -110,5 +144,6 @@ export function ProjectOverview({ projectId, pageId, versions, revision, review,
         </article>;
       })}
     </details>
+    </div>
   </section>;
 }

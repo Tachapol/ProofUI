@@ -8,10 +8,10 @@ describe("useFrameDimensions hook", () => {
     localStorage.clear();
   });
 
-  it("initializes with default dimensions for desktop (1044 x 1024)", () => {
+  it("initializes with default dimensions for desktop (1440 x 1024)", () => {
     const { result } = renderHook(() => useFrameDimensions("desktop"));
 
-    expect(result.current.frameWidth).toBe(1044);
+    expect(result.current.frameWidth).toBe(1440);
     expect(result.current.frameHeight).toBe(1024);
   });
 
@@ -31,12 +31,12 @@ describe("useFrameDimensions hook", () => {
     act(() => {
       result.current.adjustWidth(10);
     });
-    expect(result.current.frameWidth).toBe(1054);
+    expect(result.current.frameWidth).toBe(1450);
 
     act(() => {
       result.current.adjustWidth(-20);
     });
-    expect(result.current.frameWidth).toBe(1034);
+    expect(result.current.frameWidth).toBe(1430);
   });
 
   it("increases and decreases height via adjustHeight", () => {
@@ -90,7 +90,7 @@ describe("useFrameDimensions hook", () => {
     act(() => {
       result.current.resetFrameSize();
     });
-    expect(result.current.frameWidth).toBe(1044);
+    expect(result.current.frameWidth).toBe(1440);
     expect(result.current.frameHeight).toBe(1024);
   });
 

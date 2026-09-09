@@ -2,9 +2,9 @@ export const VIEWPORT_PRESETS = {
   desktop: {
     id: "desktop",
     name: "Desktop",
-    width: 1044,
+    width: 1440,
     height: 1024,
-    label: "1044×1024",
+    label: "1440×1024",
   },
   tablet: {
     id: "tablet",

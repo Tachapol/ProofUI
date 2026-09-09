@@ -1,61 +1,126 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ProofUI ⚡️
 
-## Getting Started
+ProofUI is an AI-native visual web page editor, experiment runner, and UX optimization platform built with **Next.js 16 (Turbopack)**, **React 19**, **Tailwind CSS v4**, and multimodal LLM providers (**Google Cloud Vertex AI**, **Google Gemini**, and **Qwen**).
 
-First, run the development server:
+It enables developers, designers, and marketers to design, edit, optimize, and A/B test web pages visually with bidirectional AI synchronization and real user interaction telemetry.
+
+---
+
+## ✨ Key Features
+
+- 🎨 **Visual Canvas & Custom Viewports**:
+  - Standard presets: **Desktop** (`1440 × 1024`), **Tablet** (`768 × 1024`), **Mobile** (`390 × 844`).
+  - Pixel-perfect numeric controls, 1px steppers, and fluid drag-resizing.
+- 🤖 **Multimodal AI Generation & Editing**:
+  - Generate full pages or local sections via conversational natural language prompts.
+  - Streaming generation updates via Server-Sent Events (SSE).
+  - Supports **Vertex AI (Gemini 2.5 Flash)** with GCP ADC, **Google Gemini API**, and **OpenAI-compatible Qwen** gateways.
+- 🎯 **Direct In-Canvas Manipulation**:
+  - Sandboxed iframe bridge (`injected-bridge`) with hover outlines and click selection.
+  - Inline contentEditable text editing synced automatically with the document model.
+  - Style Inspector for Tailwind typography, spacing, flex/grid layouts, and colors.
+- 📊 **UX Analyzer & Automated Recommendations**:
+  - Heuristic analysis of page hierarchy, contrast, accessibility, and conversion CTA effectiveness.
+  - One-click AI optimization application.
+- 🔬 **A/B Testing & Production Evidence**:
+  - Fork revisions into control and challenger variants.
+  - Track real or simulated sessions, conversion rates, and click heatmaps.
+  - Promote winning variants directly to production.
+- 🌐 **External Website Importer**:
+  - Extract DOM structure and design tokens from any public URL into an editable project.
+
+---
+
+## 🚀 Getting Started
+
+### 1. Installation
+
+```bash
+git clone <repo-url>
+cd ProofUI
+npm install
+```
+
+### 2. Environment Configuration
+
+Copy the sample environment file:
+
+```bash
+cp .env.example .env.local
+```
+
+Configure your preferred AI Provider in `.env.local`:
+
+#### Option A: Google Cloud Vertex AI (Recommended)
+```env
+AI_PROVIDER=vertex
+GOOGLE_CLOUD_PROJECT=your-gcp-project-id
+GOOGLE_CLOUD_LOCATION=global
+GOOGLE_GENAI_USE_VERTEXAI=true
+VERTEX_AI_MODEL=gemini-2.5-flash
+```
+*Run `gcloud auth application-default login` on your local machine to authenticate.*
+
+#### Option B: Google Gemini API (Direct Key)
+```env
+AI_PROVIDER=gemini
+GEMINI_MODEL=gemini-2.5-flash
+GEMINI_API_KEY=your-api-key
+```
+
+#### Option C: OpenAI-compatible Qwen Gateway
+```env
+AI_PROVIDER=qwen
+AI_BASE_URL=https://gateway.example.com/v1
+AI_MODEL=qwen3.8-27b-fp8
+AI_API_KEY=your-api-key
+```
+
+#### Option D: Deterministic Mock Provider (Zero setup)
+```env
+AI_PROVIDER=mock
+```
+
+### 3. Run Development Server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## AI generation provider
+---
 
-ProofUI uses the deterministic mock provider by default. To enable a real
-OpenAI-compatible Qwen endpoint, copy `.env.example` to `.env.local` and set:
+## 📖 Detailed Documentation
+
+Comprehensive documentation is available in the [`docs/`](./docs) directory:
+
+- 🏗️ **[Architecture Overview](./docs/architecture.md)** — Bridge protocol, iframe sandbox, and state lifecycle.
+- 🧠 **[AI Providers & Generation](./docs/ai-providers.md)** — Provider implementations, context building, and sanitization.
+- 🛠️ **[Features & Core Modules](./docs/features.md)** — Canvas resizing, style inspector, UX analyzer, and A/B testing.
+- 🔌 **[API Reference](./docs/api-reference.md)** — All REST/SSE endpoints under `/api/*`.
+- 🧪 **[Development & Testing Guide](./docs/testing.md)** — Unit testing with Vitest and E2E with Playwright.
+
+---
+
+## 🧪 Testing & Build
 
 ```bash
-AI_PROVIDER=qwen
-AI_BASE_URL=https://your-gateway.example/v1
-AI_MODEL=your-qwen-model
-AI_API_KEY=your-rotated-server-side-key
+# Run unit tests
+npm run test
+
+# Run end-to-end tests
+npm run test:e2e
+
+# Run linting
+npm run lint
+
+# Build for production
+npm run build
 ```
 
-For Google Gemini, use this alternative configuration:
+---
 
-```bash
-AI_PROVIDER=gemini
-GEMINI_MODEL=gemini-flash-latest
-GEMINI_API_KEY=your-rotated-server-side-key
-```
+## 🛡️ Security Note
 
-Restart the development server after changing environment variables. Keep the
-API key server-side: never prefix it with `NEXT_PUBLIC_`, commit it, paste it
-into browser code, or expose it through an API response. If a key has appeared
-in chat or source control, revoke it before use.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Keep all API keys and credentials server-side. Never expose secrets in client-side code, commit `.env.local` to git, or prefix sensitive keys with `NEXT_PUBLIC_`.
