@@ -32,6 +32,7 @@ import {
   EditorDocumentContext,
   getDefaultDocumentContext,
   CURRENT_SCHEMA_VERSION,
+  StoredEditorProject,
 } from "@/lib/editor/persistence";
 import { getSampleTailwindDocument } from "@/lib/sample-document";
 import { reconcileEditorIds } from "@/lib/code/id-reconciliation";
@@ -61,6 +62,9 @@ import { CreateExperimentDialog } from "./CreateExperimentDialog";
 import { useInteractionEvidence } from "@/lib/interaction/useInteractionEvidence";
 import { ProjectOverview } from "./ProjectOverview";
 import { ReviewState } from "@/lib/review/workflow";
+import { ProjectDashboardDialog } from "@/components/dashboard/ProjectDashboardDialog";
+import { AuthDialog } from "@/components/auth/AuthDialog";
+import { AlertCircle, RefreshCw } from "lucide-react";
 
 export function EditorShell() {
   // Stable editor session ID in parent
@@ -180,8 +184,18 @@ export function EditorShell() {
 
   // Publish & Deploy Dialog State
   const [showPublishDialog, setShowPublishDialog] = useState(false);
-  const [projectId] = useState("proj_default");
+  const [projectId, setProjectId] = useState("proj_default");
+  const [projectName, setProjectName] = useState("Landing Page");
   const [pageId] = useState("page_landing");
+
+  // Account & Project Dashboard states (Milestone 6.1)
+  const [currentUser, setCurrentUser] = useState<{ id: string; email: string; name: string } | null>(null);
+  const [showAuthDialog, setShowAuthDialog] = useState(false);
+  const [showDashboardDialog, setShowDashboardDialog] = useState(false);
+  const [isCloudSynced, setIsCloudSynced] = useState(false);
+  const [hasConflict, setHasConflict] = useState(false);
+  const [conflictServerProject, setConflictServerProject] = useState<StoredEditorProject | null>(null);
+  const [showConflictDialog, setShowConflictDialog] = useState(false);
 
   // Experiment Dialog State
   const [showCreateExperimentDialog, setShowCreateExperimentDialog] = useState(false);
@@ -195,6 +209,24 @@ export function EditorShell() {
     setExpVariantVersionId(variantId);
     setShowCreateExperimentDialog(true);
   };
+
+  // Check current session on mount
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const res = await fetch("/api/auth/me");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.user) {
+            setCurrentUser(data.user);
+          }
+        }
+      } catch (err) {
+        console.warn("Auth check failed:", err);
+      }
+    }
+    checkAuth();
+  }, []);
 
   // Generation Candidate Preview state
   const [candidate, setCandidate] = useState<GenerationCandidate | null>(() => initialProject?.review?.candidates.find(c => c.result.id === initialProject.review?.activeCandidateId && c.status === "ready") ?? null);
@@ -401,11 +433,12 @@ export function EditorShell() {
     documentRevision: revision,
   });
 
-  // Persist project changes
+  // Persist project changes locally and to cloud database if logged in
   const persistProject = useCallback(
-    (customSource?: string, customRev?: number, customContext?: EditorDocumentContext) => {
+    async (customSource?: string, customRev?: number, customContext?: EditorDocumentContext) => {
       if (typeof window === "undefined") return;
-      const saved = saveProjectToStorage({
+
+      const projectPayload: StoredEditorProject = {
         schemaVersion: CURRENT_SCHEMA_VERSION,
         document: {
           source: customSource ?? canonicalSource,
@@ -428,8 +461,47 @@ export function EditorShell() {
           isCollapsed: isSidebarCollapsed,
         },
         timestamp: Date.now(),
-      });
-      setSaveStatus(saved ? "saved" : "unsaved");
+      };
+
+      // 1. Always save to browser localStorage as safe offline copy
+      const localSaved = saveProjectToStorage(projectPayload);
+      setSaveStatus(localSaved ? "saved" : "unsaved");
+
+      // 2. If user is logged in, sync to database API with conflict check
+      if (currentUser && projectId && projectId !== "proj_default") {
+        try {
+          const res = await fetch(`/api/projects/${projectId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              data: projectPayload,
+              expectedRevision: (customRev ?? revision) - 1 > 0 ? (customRev ?? revision) - 1 : (customRev ?? revision),
+            }),
+          });
+
+          if (res.status === 409) {
+            // Revision conflict detected! Another client or device saved a newer version
+            setHasConflict(true);
+            const errData = await res.json();
+            console.warn("Project revision conflict:", errData);
+            // Fetch the current server state for resolution
+            const getRes = await fetch(`/api/projects/${projectId}`);
+            if (getRes.ok) {
+              const serverData = await getRes.json();
+              if (serverData.project?.data) {
+                setConflictServerProject(serverData.project.data);
+                setShowConflictDialog(true);
+              }
+            }
+          } else if (res.ok) {
+            setIsCloudSynced(true);
+            setHasConflict(false);
+          }
+        } catch (err) {
+          console.warn("Cloud save error:", err);
+          setIsCloudSynced(false);
+        }
+      }
     },
     [
       canonicalSource,
@@ -446,6 +518,8 @@ export function EditorShell() {
       selectedFindingIds,
       sidebarWidth,
       isSidebarCollapsed,
+      currentUser,
+      projectId,
     ]
   );
 
@@ -458,7 +532,7 @@ export function EditorShell() {
       }
       autosaveTimerRef.current = setTimeout(() => {
         setSaveStatus("saving");
-        persistProject(sourceToSave, revToSave);
+        void persistProject(sourceToSave, revToSave);
       }, EDITOR_CONFIG.AUTOSAVE_DEBOUNCE_MS);
     },
     [persistProject]
@@ -1238,6 +1312,17 @@ export function EditorShell() {
         onUndo={handleUndo}
         onRedo={handleRedo}
         saveStatus={saveStatus}
+        projectName={projectName}
+        isCloudSynced={isCloudSynced}
+        hasConflict={hasConflict}
+        onOpenDashboard={() => setShowDashboardDialog(true)}
+        user={currentUser}
+        onOpenAuth={() => setShowAuthDialog(true)}
+        onLogout={async () => {
+          await fetch("/api/auth/logout", { method: "POST" });
+          setCurrentUser(null);
+          setIsCloudSynced(false);
+        }}
         onResetDocument={handleResetDocument}
         onOpenAIComposer={() => {
           const willOpen = isSidebarCollapsed;
@@ -1645,6 +1730,150 @@ export function EditorShell() {
         pageId={pageId}
         onPublished={() => setReviewRefresh(n => n + 1)}
       />
+
+      {/* User Authentication Dialog */}
+      <AuthDialog
+        isOpen={showAuthDialog}
+        onClose={() => setShowAuthDialog(false)}
+        onSuccess={(user) => {
+          setCurrentUser(user);
+          setShowDashboardDialog(true);
+        }}
+      />
+
+      {/* Project Dashboard Dialog */}
+      <ProjectDashboardDialog
+        isOpen={showDashboardDialog}
+        onClose={() => setShowDashboardDialog(false)}
+        currentProjectId={projectId}
+        hasLocalWorkspaceData={Boolean(initialProject)}
+        onImportLocalWorkspace={async () => {
+          if (!currentUser) {
+            setShowAuthDialog(true);
+            return;
+          }
+          try {
+            const res = await fetch("/api/projects", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                name: documentContext.title || "Imported Local Workspace",
+                initialData: {
+                  schemaVersion: CURRENT_SCHEMA_VERSION,
+                  document: {
+                    source: canonicalSource,
+                    revision,
+                    context: documentContext,
+                  },
+                  conversations,
+                  messages,
+                  versions,
+                },
+              }),
+            });
+            if (res.ok) {
+              const data = await res.json();
+              if (data.project?.metadata?.id) {
+                setProjectId(data.project.metadata.id);
+                setProjectName(data.project.metadata.name);
+                setIsCloudSynced(true);
+                setShowDashboardDialog(false);
+              }
+            }
+          } catch (err) {
+            console.error("Failed to import local workspace:", err);
+          }
+        }}
+        onSelectProject={async (selectedProjId) => {
+          try {
+            const res = await fetch(`/api/projects/${selectedProjId}`);
+            if (res.ok) {
+              const data = await res.json();
+              const proj = data.project;
+              if (proj) {
+                setProjectId(proj.metadata.id);
+                setProjectName(proj.metadata.name);
+                setCanonicalSource(proj.data.document.source);
+                setRevision(proj.data.document.revision);
+                setDocumentContext(proj.data.document.context);
+                historyManager.push(proj.data.document.source, null, "Loaded Project");
+                updateHistoryState();
+                setIsCloudSynced(true);
+                setHasConflict(false);
+                sendToIframe({
+                  source: "visual-editor-parent",
+                  type: "SET_DOCUMENT_SOURCE",
+                  payload: {
+                    sessionId,
+                    source: proj.data.document.source,
+                    revision: proj.data.document.revision,
+                  },
+                });
+              }
+            }
+          } catch (err) {
+            console.error("Failed to load project:", err);
+          }
+        }}
+      />
+
+      {/* Revision Conflict Resolution Dialog */}
+      <Dialog open={showConflictDialog} onOpenChange={setShowConflictDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-amber-600">
+              <AlertCircle className="w-5 h-5" />
+              <span>Revision Conflict Detected</span>
+            </DialogTitle>
+            <DialogDescription>
+              A newer version of this project was saved from another session or device (Server Rev {conflictServerProject?.document.revision}, Local Rev {revision}).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-2 text-xs text-zinc-600 dark:text-zinc-400 space-y-2">
+            <p>How would you like to resolve this revision discrepancy?</p>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (conflictServerProject) {
+                  setCanonicalSource(conflictServerProject.document.source);
+                  setRevision(conflictServerProject.document.revision);
+                  setDocumentContext(conflictServerProject.document.context);
+                  sendToIframe({
+                    source: "visual-editor-parent",
+                    type: "SET_DOCUMENT_SOURCE",
+                    payload: {
+                      sessionId,
+                      source: conflictServerProject.document.source,
+                      revision: conflictServerProject.document.revision,
+                    },
+                  });
+                }
+                setHasConflict(false);
+                setShowConflictDialog(false);
+              }}
+            >
+              Load Server Version
+            </Button>
+            <Button
+              variant="default"
+              size="sm"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white"
+              onClick={() => {
+                const nextRev = Math.max(revision, conflictServerProject?.document.revision || 0) + 1;
+                setRevision(nextRev);
+                setHasConflict(false);
+                setShowConflictDialog(false);
+                void persistProject(canonicalSource, nextRev);
+              }}
+            >
+              Overwrite as Rev {Math.max(revision, conflictServerProject?.document.revision || 0) + 1}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -22,7 +22,11 @@ import {
   Globe,
   History,
   Rocket,
+  FolderKanban,
+  Cloud,
+  AlertCircle,
 } from "lucide-react";
+import { UserMenu } from "@/components/auth/UserMenu";
 import { SerializedNode } from "@/lib/bridge/types";
 import { VIEWPORT_PRESETS, ViewportMode } from "@/lib/editor/constants";
 import { Button } from "@/components/ui/button";
@@ -56,6 +60,13 @@ interface ToolbarProps {
   onUndo: () => void;
   onRedo: () => void;
   saveStatus: SaveStatus;
+  projectName?: string;
+  isCloudSynced?: boolean;
+  hasConflict?: boolean;
+  onOpenDashboard?: () => void;
+  user?: { id: string; email: string; name: string } | null;
+  onOpenAuth?: () => void;
+  onLogout?: () => void;
   onResetDocument: () => void;
   onOpenAIComposer: () => void;
   onOpenImportDialog: () => void;
@@ -91,6 +102,13 @@ export function Toolbar({
   onUndo,
   onRedo,
   saveStatus,
+  projectName,
+  isCloudSynced,
+  hasConflict,
+  onOpenDashboard,
+  user,
+  onOpenAuth,
+  onLogout,
   onResetDocument,
   onOpenAIComposer,
   onOpenImportDialog,
@@ -121,6 +139,21 @@ export function Toolbar({
           </span>
           <span className="hidden sm:inline text-xs font-semibold">Visual HTML Editor</span>
         </div>
+
+        {/* Project Switcher Trigger */}
+        {onOpenDashboard && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onOpenDashboard}
+            data-testid="toolbar-btn-dashboard"
+            className="gap-1.5 text-xs font-medium border-zinc-200 dark:border-zinc-800 max-w-[160px] truncate"
+            title="Open Project Dashboard"
+          >
+            <FolderKanban className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+            <span className="truncate">{projectName || "Default Project"}</span>
+          </Button>
+        )}
 
         {/* Mode Switcher: Preview | Design | Code */}
         <div className="flex items-center gap-0.5 bg-zinc-100 dark:bg-zinc-900 p-0.5 rounded-md border border-zinc-200 dark:border-zinc-800">
@@ -216,17 +249,25 @@ export function Toolbar({
 
         {/* Save Status Badge */}
         <div className="hidden lg:flex items-center gap-1.5 text-xs text-zinc-500">
-          {saveStatus === "saved" && (
+          {hasConflict ? (
+            <Badge
+              variant="destructive"
+              data-testid="save-status-conflict"
+              className="flex items-center gap-1 font-medium bg-red-600 text-white"
+            >
+              <AlertCircle className="w-3 h-3" />
+              <span>Conflict</span>
+            </Badge>
+          ) : saveStatus === "saved" ? (
             <Badge
               variant="success"
               data-testid="save-status-saved"
               className="flex items-center gap-1 font-medium"
             >
               <CheckCircle2 className="w-3 h-3" />
-              <span>Saved</span>
+              <span>{isCloudSynced ? "Cloud Saved" : "Saved"}</span>
             </Badge>
-          )}
-          {saveStatus === "unsaved" && (
+          ) : saveStatus === "unsaved" ? (
             <Badge
               variant="warning"
               data-testid="save-status-unsaved"
@@ -235,13 +276,13 @@ export function Toolbar({
               <Clock className="w-3 h-3" />
               <span>Unsaved changes</span>
             </Badge>
-          )}
-          {saveStatus === "saving" && (
+          ) : (
             <Badge
               variant="secondary"
               data-testid="save-status-saving"
               className="flex items-center gap-1 text-zinc-600 dark:text-zinc-300 animate-pulse font-medium"
             >
+              <Cloud className="w-3 h-3 text-indigo-500 animate-bounce" />
               <span>Saving...</span>
             </Badge>
           )}
@@ -508,6 +549,15 @@ export function Toolbar({
             </Badge>
           </div>
         ) : null}
+
+        {/* User Account Menu / Sign In */}
+        {onOpenAuth && (
+          <UserMenu
+            user={user || null}
+            onOpenAuth={onOpenAuth}
+            onLogout={onLogout || (() => {})}
+          />
+        )}
 
         {/* Theme Toggle Button (Light / Dark) */}
         <Button
