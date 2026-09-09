@@ -526,8 +526,56 @@ export function getInjectedBridgeScript(sessionId = "editor-session"): string {
       } catch (err) {
         console.warn('Failed to parse full source in iframe:', err);
       }
+    } else if (data.type === 'REQUEST_HEATMAP_DATA') {
+      collectHeatmapData();
     }
   });
+
+  function isInteractiveElement(el) {
+    if (!el) return false;
+    var tag = el.tagName.toLowerCase();
+    if (tag === 'button' || tag === 'a' || tag === 'input' || tag === 'select' || tag === 'textarea') return true;
+    var role = (el.getAttribute('role') || '').toLowerCase();
+    if (role === 'button' || role === 'link' || role === 'tab' || role === 'menuitem') return true;
+    var cls = (el.className || '').toLowerCase();
+    if (cls.indexOf('cursor-pointer') !== -1 || cls.indexOf('btn') !== -1 || cls.indexOf('button') !== -1) return true;
+    if (el.onclick || el.getAttribute('onclick')) return true;
+    return false;
+  }
+
+  function collectHeatmapData() {
+    var nodes = [];
+    var all = document.querySelectorAll('[data-editor-id]');
+    for (var i = 0; i < all.length; i++) {
+      var el = all[i];
+      if (el === document.body || el === document.documentElement) continue;
+      var rect = getRect(el);
+      if (!rect || rect.width <= 0 || rect.height <= 0) continue;
+
+      var isInteractive = isInteractiveElement(el);
+      var text = (el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 80);
+      nodes.push({
+        id: el.getAttribute('data-editor-id'),
+        tagName: el.tagName.toLowerCase(),
+        rect: rect,
+        textContent: text || undefined,
+        isInteractive: isInteractive,
+        classes: el.className || undefined,
+        role: el.getAttribute('role') || undefined
+      });
+    }
+
+    var scrollH = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight, window.innerHeight);
+    var scrollW = Math.max(document.body.scrollWidth, document.documentElement.scrollWidth, window.innerWidth);
+
+    postToParent('HEATMAP_DATA_REPORT', {
+      nodes: nodes,
+      scrollHeight: scrollH,
+      scrollWidth: scrollW,
+      viewportHeight: window.innerHeight,
+      viewportWidth: window.innerWidth
+    });
+  }
 
   function init() {
     assignEditorIds(document.body);

@@ -1,8 +1,10 @@
 "use client";
 
 import React, { RefObject } from "react";
-import { DOMRectData } from "@/lib/bridge/types";
+import { DOMRectData, MeasuredHeatmapNode } from "@/lib/bridge/types";
 import { VIEWPORT_PRESETS, ViewportMode } from "@/lib/editor/constants";
+import { AggregatedProductionEvidence } from "@/lib/production/schemas";
+import { HeatmapCanvasOverlay, HeatmapMode } from "./HeatmapCanvasOverlay";
 
 interface ViewportCanvasProps {
   viewport: ViewportMode;
@@ -21,6 +23,17 @@ interface ViewportCanvasProps {
   isResizing?: boolean;
   onStartResize?: (direction: "right" | "bottom" | "corner", e: React.MouseEvent) => void;
   onResetFrameSize?: () => void;
+  // Heatmap props
+  isHeatmapActive?: boolean;
+  heatmapNodes?: MeasuredHeatmapNode[];
+  heatmapEvidence?: AggregatedProductionEvidence | null;
+  heatmapMode?: HeatmapMode;
+  onHeatmapModeChange?: (mode: HeatmapMode) => void;
+  heatmapOpacity?: number;
+  onHeatmapOpacityChange?: (opacity: number) => void;
+  onCloseHeatmap?: () => void;
+  onSelectNode?: (id: string | null) => void;
+  heatmapScrollHeight?: number;
 }
 
 export function ViewportCanvas({
@@ -40,6 +53,16 @@ export function ViewportCanvas({
   isResizing = false,
   onStartResize,
   onResetFrameSize,
+  isHeatmapActive = false,
+  heatmapNodes = [],
+  heatmapEvidence,
+  heatmapMode = "saliency",
+  onHeatmapModeChange,
+  heatmapOpacity = 0.7,
+  onHeatmapOpacityChange,
+  onCloseHeatmap,
+  onSelectNode,
+  heatmapScrollHeight,
 }: ViewportCanvasProps) {
   // Width styling based on standardized viewport presets
   const widthClasses = {
@@ -123,6 +146,24 @@ export function ViewportCanvas({
             onLoad={onIframeLoad}
             className="w-full h-full border-none bg-slate-950 block"
           />
+
+          {/* Interactive Attention & Heatmap Overlay */}
+          {isHeatmapActive && (
+            <HeatmapCanvasOverlay
+              nodes={heatmapNodes}
+              evidence={heatmapEvidence}
+              selectedId={selectedId}
+              onSelectNode={onSelectNode}
+              mode={heatmapMode}
+              onModeChange={onHeatmapModeChange || (() => {})}
+              opacity={heatmapOpacity}
+              onOpacityChange={onHeatmapOpacityChange || (() => {})}
+              onClose={onCloseHeatmap || (() => {})}
+              scrollHeight={heatmapScrollHeight || activeHeight}
+              viewportHeight={activeHeight}
+              viewportWidth={activeWidth}
+            />
+          )}
 
           {/* Parent-Rendered Hover & Selection Overlay Layer (Design Mode only) */}
           {editorMode === "design" && (

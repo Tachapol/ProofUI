@@ -25,6 +25,7 @@ import {
   FolderKanban,
   Cloud,
   AlertCircle,
+  Flame,
 } from "lucide-react";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { SerializedNode } from "@/lib/bridge/types";
@@ -78,6 +79,8 @@ interface ToolbarProps {
   onToggleLayers?: () => void;
   isAIActive?: boolean;
   isOptimizationActive?: boolean;
+  isHeatmapActive?: boolean;
+  onToggleHeatmap?: () => void;
   frameWidth?: number;
   frameHeight?: number;
   onWidthChange?: (width: number) => void;
@@ -121,6 +124,8 @@ export function Toolbar({
   onToggleLayers,
   isAIActive,
   isOptimizationActive,
+  isHeatmapActive,
+  onToggleHeatmap,
   frameWidth,
   frameHeight,
   onWidthChange,
@@ -489,6 +494,25 @@ export function Toolbar({
           >
             <Sparkles className="w-3.5 h-3.5" />
             <span className="hidden md:inline">Analyze UX</span>
+          </Button>
+        )}
+
+        {/* Heatmap & Attention Trigger */}
+        {onToggleHeatmap && (
+          <Button
+            variant={isHeatmapActive ? "default" : "outline"}
+            size="sm"
+            onClick={onToggleHeatmap}
+            data-testid="toolbar-btn-heatmap"
+            className={
+              isHeatmapActive
+                ? "gap-1.5 font-medium bg-amber-500 text-zinc-950 hover:bg-amber-400 font-bold shadow-xs"
+                : "gap-1.5 font-medium border-amber-300 dark:border-amber-800 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950"
+            }
+            title="Toggle Attention & Click Heatmap Overlay"
+          >
+            <Flame className="w-3.5 h-3.5" />
+            <span className="hidden md:inline">Heatmap</span>
           </Button>
         )}
 

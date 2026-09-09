@@ -18,7 +18,10 @@ import {
   DOMRectData,
   parseIframeMessage,
   ParentToIframeMessage,
+  MeasuredHeatmapNode,
 } from "@/lib/bridge/types";
+import { HeatmapMode } from "./HeatmapCanvasOverlay";
+import { AggregatedProductionEvidence } from "@/lib/production/schemas";
 import { getNodePath, findNodeById } from "@/lib/dom/serializer";
 import { ViewportMode, EDITOR_CONFIG } from "@/lib/editor/constants";
 import { useFrameDimensions } from "@/lib/editor/useFrameDimensions";
@@ -88,6 +91,14 @@ export function EditorShell({ onOpenWelcome }: { onOpenWelcome?: () => void } = 
 
   // Interaction evidence tracking for preview mode
   const interactionEvidence = useInteractionEvidence(documentTree);
+
+  // Interactive Attention & Heatmap Overlay states
+  const [isHeatmapActive, setIsHeatmapActive] = useState<boolean>(false);
+  const [heatmapMode, setHeatmapMode] = useState<HeatmapMode>("saliency");
+  const [heatmapOpacity, setHeatmapOpacity] = useState<number>(0.75);
+  const [heatmapNodes, setHeatmapNodes] = useState<MeasuredHeatmapNode[]>([]);
+  const [heatmapScrollHeight, setHeatmapScrollHeight] = useState<number>(1200);
+  const [heatmapEvidence, setHeatmapEvidence] = useState<AggregatedProductionEvidence | null>(null);
 
   // Theme state: default to dark mode with local persistence
   const [theme, setTheme] = useState<ThemeMode>(() => {
@@ -1247,6 +1258,11 @@ export function EditorShell({ onOpenWelcome }: { onOpenWelcome?: () => void } = 
         case "INTERACTION_EVENT":
           interactionEvidence.processEvent(message.payload.event);
           break;
+
+        case "HEATMAP_DATA_REPORT":
+          setHeatmapNodes(message.payload.nodes);
+          setHeatmapScrollHeight(message.payload.scrollHeight);
+          break;
       }
     };
 
@@ -1272,6 +1288,51 @@ export function EditorShell({ onOpenWelcome }: { onOpenWelcome?: () => void } = 
 
     return () => clearInterval(interval);
   }, [sessionId, documentTree, sendToIframe]);
+
+  // Toggle Heatmap handler
+  const handleToggleHeatmap = useCallback(() => {
+    setIsHeatmapActive((prev) => {
+      const next = !prev;
+      if (next) {
+        sendToIframe({
+          source: "visual-editor-parent",
+          type: "REQUEST_HEATMAP_DATA",
+          payload: { sessionId },
+        });
+      }
+      return next;
+    });
+  }, [sendToIframe, sessionId]);
+
+  // Request fresh heatmap data whenever active and document updates
+  useEffect(() => {
+    if (isHeatmapActive) {
+      sendToIframe({
+        source: "visual-editor-parent",
+        type: "REQUEST_HEATMAP_DATA",
+        payload: { sessionId },
+      });
+    }
+  }, [isHeatmapActive, revision, canonicalSource, sendToIframe, sessionId]);
+
+  // Fetch production evidence for heatmap overlay
+  useEffect(() => {
+    if (!isHeatmapActive) return;
+    const fetchEvidence = async () => {
+      try {
+        const res = await fetch(`/api/production/evidence?projectId=${encodeURIComponent(projectId || "proj_default")}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.evidence && data.evidence.length > 0) {
+            setHeatmapEvidence(data.evidence[0]);
+          }
+        }
+      } catch {
+        // Fallback to realistic heuristic simulation
+      }
+    };
+    fetchEvidence();
+  }, [isHeatmapActive, projectId]);
 
   // Breadcrumbs path
   const selectionPathNodes = useMemo(() => {
@@ -1352,6 +1413,8 @@ export function EditorShell({ onOpenWelcome }: { onOpenWelcome?: () => void } = 
           }
         }}
         isOptimizationActive={!isRightSidebarCollapsed && rightSidebarTab === "optimization"}
+        isHeatmapActive={isHeatmapActive}
+        onToggleHeatmap={handleToggleHeatmap}
       />
 
       <ProjectOverview
@@ -1483,6 +1546,16 @@ export function EditorShell({ onOpenWelcome }: { onOpenWelcome?: () => void } = 
                 isResizing={isResizingFrame}
                 onStartResize={startFrameResize}
                 onResetFrameSize={resetFrameSize}
+                isHeatmapActive={isHeatmapActive}
+                heatmapNodes={heatmapNodes}
+                heatmapEvidence={heatmapEvidence}
+                heatmapMode={heatmapMode}
+                onHeatmapModeChange={setHeatmapMode}
+                heatmapOpacity={heatmapOpacity}
+                onHeatmapOpacityChange={setHeatmapOpacity}
+                onCloseHeatmap={() => setIsHeatmapActive(false)}
+                onSelectNode={handleSelectNode}
+                heatmapScrollHeight={heatmapScrollHeight}
               />
             </div>
 

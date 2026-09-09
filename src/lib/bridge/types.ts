@@ -107,8 +107,39 @@ export const IframeToParentMessageSchema = z.discriminatedUnion("type", [
     type: z.literal("INTERACTION_EVENT"),
     payload: InteractionEventPayloadSchema,
   }),
+  z.object({
+    source: z.literal("visual-editor-iframe"),
+    type: z.literal("HEATMAP_DATA_REPORT"),
+    payload: z.lazy(() => HeatmapDataReportPayloadSchema),
+  }),
 ]);
 export type IframeToParentMessage = z.infer<typeof IframeToParentMessageSchema>;
+
+export const MeasuredHeatmapNodeSchema = z.object({
+  id: z.string(),
+  tagName: z.string(),
+  rect: DOMRectDataSchema,
+  textContent: z.string().optional(),
+  isInteractive: z.boolean(),
+  classes: z.string().optional(),
+  role: z.string().optional(),
+});
+export type MeasuredHeatmapNode = z.infer<typeof MeasuredHeatmapNodeSchema>;
+
+export const HeatmapDataReportPayloadSchema = z.object({
+  sessionId: z.string(),
+  nodes: z.array(MeasuredHeatmapNodeSchema),
+  scrollHeight: z.number(),
+  scrollWidth: z.number(),
+  viewportHeight: z.number(),
+  viewportWidth: z.number(),
+});
+export type HeatmapDataReportPayload = z.infer<typeof HeatmapDataReportPayloadSchema>;
+
+export const RequestHeatmapDataPayloadSchema = z.object({
+  sessionId: z.string(),
+});
+export type RequestHeatmapDataPayload = z.infer<typeof RequestHeatmapDataPayloadSchema>;
 
 // Parent -> Iframe Messages
 export const SelectNodePayloadSchema = z.object({
@@ -183,6 +214,11 @@ export const ParentToIframeMessageSchema = z.discriminatedUnion("type", [
     source: z.literal("visual-editor-parent"),
     type: z.literal("SET_DOCUMENT_SOURCE"),
     payload: SetDocumentSourcePayloadSchema,
+  }),
+  z.object({
+    source: z.literal("visual-editor-parent"),
+    type: z.literal("REQUEST_HEATMAP_DATA"),
+    payload: RequestHeatmapDataPayloadSchema,
   }),
 ]);
 export type ParentToIframeMessage = z.infer<typeof ParentToIframeMessageSchema>;
